@@ -8,35 +8,34 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-root:       #080c12;
-            --bg-card:       #0e1520;
-            --bg-section:    #121c2a;
-            --bg-input:      #1a2740;
-            --bg-grid:       #162036;
-            --border:        #1f3050;
+            --bg-root: #080c12;
+            --bg-card: #0e1520;
+            --bg-section: #121c2a;
+            --bg-input: #1a2740;
+            --bg-grid: #162036;
+            --border: #1f3050;
             --border-accent: #2a4878;
-            --text-primary:  #e8f0fe;
+            --text-primary: #e8f0fe;
             --text-secondary:#7a9cc4;
-            --text-muted:    #3d5a80;
-            --up:            #ff4d6d;
-            --down:          #00d68f;
-            --up-bg:         rgba(255,77,109,0.12);
-            --down-bg:       rgba(0,214,143,0.12);
-            --accent-blue:   #4d9fff;
+            --text-muted: #3d5a80;
+            --up: #ff4d6d;
+            --down: #00d68f;
+            --up-bg: rgba(255,77,109,0.12);
+            --down-bg: rgba(0,214,143,0.12);
+            --accent-blue: #4d9fff;
         }
         * { box-sizing:border-box; margin:0; padding:0; }
         body {
             font-family:'Noto Sans TC',sans-serif;
             background-color:var(--bg-root);
             background-image:
-                radial-gradient(ellipse at 20% 0%,  rgba(30,60,120,0.25) 0%,transparent 60%),
-                radial-gradient(ellipse at 80% 100%,rgba(10,40,80,0.30)  0%,transparent 60%);
+                radial-gradient(ellipse at 20% 0%, rgba(30,60,120,0.25) 0%,transparent 60%),
+                radial-gradient(ellipse at 80% 100%,rgba(10,40,80,0.30) 0%,transparent 60%);
             color:var(--text-primary);
             min-height:100vh; padding:28px 16px;
             display:flex; flex-direction:column; align-items:center;
         }
         .container { width:100%; max-width:920px; }
-
         /* ── Header ── */
         .header-section {
             display:flex; justify-content:space-between; align-items:center;
@@ -52,8 +51,24 @@
         }
         h2 { font-size:20px; font-weight:700; letter-spacing:0.02em; }
         .header-sub { color:var(--text-secondary); font-size:12px; margin-top:2px; }
-        .header-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-
+        .header-right { 
+            display:flex; flex-direction:column; align-items:flex-end; gap:8px; 
+            width: 100%; max-width: 420px;
+        }
+        /* ── 新增股票 ── */
+        .add-stock-row {
+            display:flex; gap:8px; width:100%; justify-content:flex-end;
+        }
+        .add-stock-row input {
+            background:var(--bg-input); border:1px solid var(--border-accent);
+            color:var(--accent-blue); padding:9px 12px; border-radius:8px;
+            font-family:'JetBrains Mono',monospace; font-size:13px; width:190px;
+        }
+        .add-stock-row button {
+            background:linear-gradient(135deg,#1a5fc8,#2d8fff);
+            color:#fff; border:none; padding:9px 18px; border-radius:8px;
+            cursor:pointer; font-weight:700; font-size:13px;
+        }
         /* ── 狀態列 ── */
         #statusBar {
             display:flex; align-items:center; gap:6px;
@@ -66,10 +81,9 @@
         }
         #statusBar.trading { color:#00d68f; }
         #statusBar.trading .dot { background:#00d68f; box-shadow:0 0 6px #00d68f; animation:pulse 1.5s infinite; }
-        #statusBar.soon    { color:var(--accent-blue); }
+        #statusBar.soon { color:var(--accent-blue); }
         #statusBar.soon .dot { background:var(--accent-blue); }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
         .btn-update {
             background:linear-gradient(135deg,#1a5fc8,#2d8fff);
             color:#fff; border:none; padding:10px 20px; border-radius:8px;
@@ -77,9 +91,8 @@
             font-family:'Noto Sans TC',sans-serif; letter-spacing:0.03em;
             transition:all 0.2s; box-shadow:0 4px 16px rgba(45,143,255,0.3);
         }
-        .btn-update:hover  { transform:translateY(-1px); }
+        .btn-update:hover { transform:translateY(-1px); }
         .btn-update:disabled { background:#1a2740; color:var(--text-muted); cursor:not-allowed; box-shadow:none; transform:none; }
-
         /* ── 分類標題 ── */
         .group-header {
             font-size:11px; font-weight:700; letter-spacing:0.14em;
@@ -88,7 +101,6 @@
             border-left:3px solid var(--border-accent);
         }
         .group-header:first-child { margin-top:0; }
-
         /* ── Card ── */
         .card {
             background:var(--bg-card); border-radius:14px;
@@ -97,9 +109,8 @@
             box-shadow:0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
             transition:border-left-color 0.35s;
         }
-        .card.up-card   { border-left-color:var(--up); }
+        .card.up-card { border-left-color:var(--up); }
         .card.down-card { border-left-color:var(--down); }
-
         /* ── Card Top ── */
         .card-top {
             display:flex; justify-content:space-between; align-items:center;
@@ -121,33 +132,30 @@
             padding:3px 8px; border-radius:5px; width:120px;
         }
         .stock-symbol input:focus { outline:none; border-color:var(--accent-blue); }
-
         /* ── Price ── */
         .price-info { text-align:right; }
         .current-price {
             font-family:'JetBrains Mono',monospace;
             font-size:28px; font-weight:700; letter-spacing:-0.02em; line-height:1;
         }
-        .current-price.up   { color:var(--up); }
+        .current-price.up { color:var(--up); }
         .current-price.down { color:var(--down); }
         .price-change {
             font-family:'JetBrains Mono',monospace;
             font-size:13px; margin-top:5px; padding:3px 9px;
             border-radius:6px; display:inline-block; font-weight:600;
         }
-        .price-change.up   { background:var(--up-bg);   color:var(--up); }
-        .price-change.down { background:var(--down-bg);  color:var(--down); }
-        .vol-info  { font-size:11px; color:var(--text-muted); margin-top:5px; }
+        .price-change.up { background:var(--up-bg); color:var(--up); }
+        .price-change.down { background:var(--down-bg); color:var(--down); }
+        .vol-info { font-size:11px; color:var(--text-muted); margin-top:5px; }
         .vol-info span { color:var(--text-secondary); }
         .data-time { font-size:10px; color:var(--text-muted); margin-top:3px; font-family:'JetBrains Mono',monospace; }
         .data-time.stale { color:#e07b00; }
-        .error-text   { color:#ff9000 !important; font-size:14px !important; }
+        .error-text { color:#ff9000 !important; font-size:14px !important; }
         .loading-text { color:var(--text-muted) !important; font-size:14px !important; }
-
         /* ── Chart ── */
         .chart-container { width:100%; height:100px; background:rgba(8,18,30,0.5); }
         .chart-container canvas { display:block; }
-
         /* ── Inputs ── */
         .calc-inputs {
             display:flex; flex-wrap:wrap; gap:14px; padding:16px 20px;
@@ -168,9 +176,8 @@
         .result-group { display:flex; flex-direction:column; gap:5px; margin-left:auto; text-align:right; }
         .result-group label { font-size:10px; color:var(--text-secondary); font-weight:600; letter-spacing:0.07em; text-transform:uppercase; }
         .result-val { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; }
-        .up   { color:var(--up)   !important; }
+        .up { color:var(--up) !important; }
         .down { color:var(--down) !important; }
-
         /* ── Grid ── */
         .grid-section { padding:14px 20px; }
         .grid-section + .grid-section { padding-top:4px; }
@@ -180,35 +187,32 @@
             display:flex; align-items:center; gap:8px;
         }
         .grid-title::after { content:''; flex:1; height:1px; background:var(--border); }
-        .data-grid     { display:grid; grid-template-columns:repeat(6,1fr); gap:7px; }
+        .data-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:7px; }
         .data-grid-fib { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
         .grid-item { border-radius:8px; padding:9px 5px; text-align:center; transition:transform 0.15s; }
         .grid-item:hover { transform:translateY(-1px); }
         .item-label { font-size:10px; margin-bottom:4px; font-family:'JetBrains Mono',monospace; }
         .item-value { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; }
-
-        .grid-item.drop-5  { background:rgba(56,189,248,.10);  border:1px solid rgba(56,189,248,.45);  border-left:3px solid #38bdf8; }
-        .grid-item.drop-5  .item-label{color:#7dd3fc}  .grid-item.drop-5  .item-value{color:#38bdf8}
-        .grid-item.drop-10 { background:rgba(99,210,160,.10);  border:1px solid rgba(99,210,160,.45);  border-left:3px solid #63d2a0; }
-        .grid-item.drop-10 .item-label{color:#9de8c4}  .grid-item.drop-10 .item-value{color:#63d2a0}
-        .grid-item.drop-15 { background:rgba(250,204,21,.10);  border:1px solid rgba(250,204,21,.45);  border-left:3px solid #facc15; }
-        .grid-item.drop-15 .item-label{color:#fde68a}  .grid-item.drop-15 .item-value{color:#facc15}
-        .grid-item.drop-20 { background:rgba(251,146,60,.12);  border:1px solid rgba(251,146,60,.50);  border-left:3px solid #fb923c; }
-        .grid-item.drop-20 .item-label{color:#fdba74}  .grid-item.drop-20 .item-value{color:#fb923c}
+        .grid-item.drop-5 { background:rgba(56,189,248,.10); border:1px solid rgba(56,189,248,.45); border-left:3px solid #38bdf8; }
+        .grid-item.drop-5 .item-label{color:#7dd3fc} .grid-item.drop-5 .item-value{color:#38bdf8}
+        .grid-item.drop-10 { background:rgba(99,210,160,.10); border:1px solid rgba(99,210,160,.45); border-left:3px solid #63d2a0; }
+        .grid-item.drop-10 .item-label{color:#9de8c4} .grid-item.drop-10 .item-value{color:#63d2a0}
+        .grid-item.drop-15 { background:rgba(250,204,21,.10); border:1px solid rgba(250,204,21,.45); border-left:3px solid #facc15; }
+        .grid-item.drop-15 .item-label{color:#fde68a} .grid-item.drop-15 .item-value{color:#facc15}
+        .grid-item.drop-20 { background:rgba(251,146,60,.12); border:1px solid rgba(251,146,60,.50); border-left:3px solid #fb923c; }
+        .grid-item.drop-20 .item-label{color:#fdba74} .grid-item.drop-20 .item-value{color:#fb923c}
         .grid-item.drop-25 { background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.50); border-left:3px solid #f87171; }
-        .grid-item.drop-25 .item-label{color:#fca5a5}  .grid-item.drop-25 .item-value{color:#f87171}
-        .grid-item.drop-30 { background:rgba(239,68,68,.16);   border:1px solid rgba(239,68,68,.60);   border-left:3px solid #ef4444; }
-        .grid-item.drop-30 .item-label{color:#fca5a5}  .grid-item.drop-30 .item-value{color:#ef4444;font-size:14px}
-
+        .grid-item.drop-25 .item-label{color:#fca5a5} .grid-item.drop-25 .item-value{color:#f87171}
+        .grid-item.drop-30 { background:rgba(239,68,68,.16); border:1px solid rgba(239,68,68,.60); border-left:3px solid #ef4444; }
+        .grid-item.drop-30 .item-label{color:#fca5a5} .grid-item.drop-30 .item-value{color:#ef4444;font-size:14px}
         .grid-item.fib-236 { background:rgba(167,139,250,.10); border:1px solid rgba(167,139,250,.40); border-left:3px solid #a78bfa; }
-        .grid-item.fib-236 .item-label{color:#c4b5fd}  .grid-item.fib-236 .item-value{color:#a78bfa}
-        .grid-item.fib-382 { background:rgba(139,92,246,.12);  border:1px solid rgba(139,92,246,.50);  border-left:3px solid #8b5cf6; }
-        .grid-item.fib-382 .item-label{color:#c4b5fd}  .grid-item.fib-382 .item-value{color:#8b5cf6}
-        .grid-item.fib-500 { background:rgba(109,40,217,.16);  border:1px solid rgba(124,58,237,.55);  border-left:3px solid #7c3aed; }
-        .grid-item.fib-500 .item-label{color:#c4b5fd}  .grid-item.fib-500 .item-value{color:#c084fc}
-        .grid-item.fib-618 { background:rgba(88,28,135,.22);   border:1px solid rgba(168,85,247,.65);  border-left:3px solid #a855f7; }
-        .grid-item.fib-618 .item-label{color:#e9d5ff}  .grid-item.fib-618 .item-value{color:#e879f9;font-size:14px}
-
+        .grid-item.fib-236 .item-label{color:#c4b5fd} .grid-item.fib-236 .item-value{color:#a78bfa}
+        .grid-item.fib-382 { background:rgba(139,92,246,.12); border:1px solid rgba(139,92,246,.50); border-left:3px solid #8b5cf6; }
+        .grid-item.fib-382 .item-label{color:#c4b5fd} .grid-item.fib-382 .item-value{color:#8b5cf6}
+        .grid-item.fib-500 { background:rgba(109,40,217,.16); border:1px solid rgba(124,58,237,.55); border-left:3px solid #7c3aed; }
+        .grid-item.fib-500 .item-label{color:#c4b5fd} .grid-item.fib-500 .item-value{color:#c084fc}
+        .grid-item.fib-618 { background:rgba(88,28,135,.22); border:1px solid rgba(168,85,247,.65); border-left:3px solid #a855f7; }
+        .grid-item.fib-618 .item-label{color:#e9d5ff} .grid-item.fib-618 .item-value{color:#e879f9;font-size:14px}
         /* ── 已達標 ── */
         .grid-item.hit { outline:2px solid #facc15; outline-offset:-1px; }
         .hit-star {
@@ -217,122 +221,101 @@
             color:#facc15;
             filter:drop-shadow(0 0 4px rgba(250,204,21,0.8));
         }
-
         /* ── Footer ── */
         .footer-bar { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
         .note { font-size:11px; color:var(--text-muted); }
         #proxyStatus { font-size:10px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
-
         @media (max-width:640px) {
-            .data-grid     { grid-template-columns:repeat(3,1fr); }
+            .data-grid { grid-template-columns:repeat(3,1fr); }
             .data-grid-fib { grid-template-columns:repeat(2,1fr); }
-            .calc-inputs   { gap:10px; }
+            .calc-inputs { gap:10px; }
             .input-group input { width:85px; font-size:13px; }
             .current-price { font-size:22px; }
             .card-top, .calc-inputs, .grid-section { padding:14px; }
+            .add-stock-row input { width:140px; }
         }
     </style>
 </head>
 <body>
 <div class="container">
-
     <div class="header-section">
         <div class="header-left">
             <div class="header-icon">📈</div>
             <div>
                 <h2>股市看板</h2>
-                <div class="header-sub">台股收盤 · 期貨/外匯即時 · 回檔分析</div>
+                <div class="header-sub">即時報價 · 回檔目標 · 斐波那契</div>
             </div>
         </div>
         <div class="header-right">
+            <!-- 新增股票 -->
+            <div class="add-stock-row">
+                <input id="newCode" placeholder="新增代碼 如 2330 / GC=F / ^TWII" 
+                       onkeypress="if(event.key==='Enter') addNewStock()">
+                <button onclick="addNewStock()">+ 新增</button>
+            </div>
             <div id="statusBar"><span class="dot"></span><span id="statusTxt">計算中…</span></div>
             <button id="updateBtn" class="btn-update" onclick="manualRefresh()">⟳ &nbsp;同步最新報價</button>
         </div>
     </div>
-
     <div id="cards-container"></div>
-
     <div class="footer-bar">
-        <div class="note">台股：TWSE/TPEX OpenAPI（免 Proxy） · 期貨/外匯：Yahoo Finance · 開盤 09:00–13:50 每 30 秒更新</div>
+        <div class="note">Yahoo Finance · 多重 Proxy · 開盤 09:00–13:50 每 30 秒自動更新</div>
         <div id="proxyStatus"></div>
     </div>
 </div>
 
 <script>
 // ═══════════════════════════════════════════
-//  股票清單
+// 股票清單
 // ═══════════════════════════════════════════
 const DEFAULT = [
-    { group:'📊 台灣股市', code:'台灣加權',     yahoo:'^TWII',     highest:35414.54, low:'26434.94', current:'', dp:2 },
-    { group:'📊 台灣股市', code:'00982A',       yahoo:'00982A.TW', highest:16.76,    low:'',         current:'', dp:2 },
-    { group:'📊 台灣股市', code:'009805',       yahoo:'009805.TW', highest:15.19,    low:'',         current:'', dp:2 },
-    { group:'📊 台灣股市', code:'00949',        yahoo:'00949.TW',  highest:20.88,    low:'',         current:'', dp:2 },
-    { group:'🛢 商品期貨', code:'黃金期貨 XAU', yahoo:'GC=F',      highest:0, low:'', current:'', dp:2 },
-    { group:'🛢 商品期貨', code:'原油期貨 WTI', yahoo:'CL=F',      highest:0, low:'', current:'', dp:2 },
-    { group:'💱 外匯',    code:'美元/日元',    yahoo:'JPY=X',     highest:0, low:'', current:'', dp:2 },
-    { group:'💱 外匯',    code:'日元/台幣',    yahoo:'JPYTWD=X',  highest:0, low:'', current:'', dp:4 },
+    { group:'📊 台灣股市', code:'台灣加權', yahoo:'^TWII', highest:35414.54, low:'26434.94', current:'', dp:2 },
+    { group:'📊 台灣股市', code:'00982A', yahoo:'00982A.TW', highest:16.76, low:'', current:'', dp:2 },
+    { group:'📊 台灣股市', code:'009805', yahoo:'009805.TW', highest:15.19, low:'', current:'', dp:2 },
+    { group:'📊 台灣股市', code:'00949', yahoo:'00949.TW', highest:20.88, low:'', current:'', dp:2 },
+    { group:'🛢 商品期貨', code:'黃金期貨 XAU', yahoo:'GC=F', highest:0, low:'', current:'', dp:2 },
+    { group:'🛢 商品期貨', code:'原油期貨 WTI', yahoo:'CL=F', highest:0, low:'', current:'', dp:2 },
+    { group:'💱 外匯', code:'美元/日元', yahoo:'JPY=X', highest:0, low:'', current:'', dp:4 },
+    { group:'💱 外匯', code:'日元/台幣', yahoo:'JPYTWD=X', highest:0, low:'', current:'', dp:4 },
 ];
 
-// 從 localStorage 還原用戶輸入的高低點
+// 從 localStorage 還原（完整支援新增股票 + 舊資料相容）
 let stocks = [];
 try {
     const saved = JSON.parse(localStorage.getItem('stockDataV4') || '[]');
-    stocks = DEFAULT.map((def, i) => {
-        const sv = saved[i] || {};
-        return { ...def,
-            highest: sv.highest !== undefined ? sv.highest : def.highest,
-            low:     sv.low     !== undefined ? sv.low     : def.low,
-            current: sv.current !== undefined ? sv.current : def.current,
-        };
-    });
-} catch(e) { stocks = DEFAULT.map(d => ({...d})); }
+    if (saved.length > 0 && saved[0].group) {
+        // 新格式（完整物件）
+        stocks = saved;
+    } else {
+        // 舊格式或首次使用
+        stocks = DEFAULT.map((def, i) => {
+            const sv = saved[i] || {};
+            return { ...def,
+                highest: sv.highest !== undefined ? sv.highest : def.highest,
+                low: sv.low !== undefined ? sv.low : def.low,
+                current: sv.current !== undefined ? sv.current : def.current,
+            };
+        });
+    }
+} catch(e) {
+    stocks = DEFAULT.map(d => ({...d}));
+}
 
 // ═══════════════════════════════════════════
-//  Proxy（僅外匯/期貨用）
+// Proxy
 // ═══════════════════════════════════════════
 const PROXIES = [
-    { fn: u => `https://corsproxy.io/?${encodeURIComponent(u)}`,                   wrap:false },
-    { fn: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,       wrap:false },
-    { fn: u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,       wrap:true  },
-    { fn: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,  wrap:false },
-    { fn: u => `https://corsproxy.org/?${encodeURIComponent(u)}`,                   wrap:false },
+    { fn: u => `https://corsproxy.io/?${encodeURIComponent(u)}`, wrap:false },
+    { fn: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`, wrap:false },
+    { fn: u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`, wrap:true },
+    { fn: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, wrap:false },
+    { fn: u => `https://corsproxy.org/?${encodeURIComponent(u)}`, wrap:false },
 ];
 let bestProxy = 0;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// ── TWSE openapi 快取（一次抓全部，分給各卡片）──
-// 每次 fetchAll 時先抓一次，存在這裡
-let twseCache   = null;  // STOCK_DAY_ALL
-let tpexCache   = null;  // 上櫃 ETF
-let indexCache  = null;  // MI_INDEX 加權指數
-let cacheTime   = 0;
-
-// 上櫃代號列表（009805 等）
-const OTC_CODES = new Set(['009805']);
-
-async function loadTwseCache() {
-    const now = Date.now();
-    // 快取 60 秒內不重抓（盤後資料不需要太頻繁）
-    if (now - cacheTime < 60000 && twseCache) return;
-    try {
-        // 上市個股當日收盤行情
-        const [r1, r2, r3] = await Promise.all([
-            fetch('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL', { cache:'no-store' }),
-            fetch('https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX',      { cache:'no-store' }),
-            fetch('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes', { cache:'no-store' }),
-        ]);
-        if (r1.ok) twseCache  = await r1.json();
-        if (r2.ok) indexCache = await r2.json();
-        if (r3.ok) tpexCache  = await r3.json();
-        cacheTime = Date.now();
-        document.getElementById('proxyStatus').textContent = 'TWSE OpenAPI ✓';
-    } catch(e) {
-        document.getElementById('proxyStatus').textContent = 'TWSE API 失敗';
-    }
-}
-
 // ═══════════════════════════════════════════
-//  開盤時間（台灣時間 09:00–13:50，週一~五）
+// 開盤時間（台灣時間 09:00–13:50，週一~五）
 // ═══════════════════════════════════════════
 function twNow() {
     return new Date(new Date().toLocaleString('en-US', { timeZone:'Asia/Taipei' }));
@@ -341,87 +324,54 @@ function isTradingHours() {
     const tw = twNow(), day = tw.getDay();
     if (day === 0 || day === 6) return false;
     const m = tw.getHours()*60 + tw.getMinutes();
-    return m >= 540 && m <= 830;   // 09:00=540  13:50=830
+    return m >= 540 && m <= 830;
 }
 function statusLabel(sec) {
     if (isTradingHours()) return `開盤中 · ${sec}s`;
     const tw = twNow(), day = tw.getDay();
-    const m  = tw.getHours()*60 + tw.getMinutes();
+    const m = tw.getHours()*60 + tw.getMinutes();
     if (day === 0 || day === 6) return '休市（週末）';
     if (m < 540) { const d=540-m; return `開盤還有 ${Math.floor(d/60)}h${d%60}m`; }
     return '今日已收盤';
 }
 
+// 新增：立即更新狀態列（解決「計算中…」卡住問題）
+function refreshStatus() {
+    const bar = document.getElementById('statusBar');
+    const txt = document.getElementById('statusTxt');
+    if (!bar || !txt) return;
+    if (isTradingHours()) {
+        bar.className = countdown <= 5 ? 'soon' : 'trading';
+        txt.textContent = statusLabel(countdown);
+    } else {
+        bar.className = '';
+        txt.textContent = statusLabel(0);
+    }
+}
+
 // ═══════════════════════════════════════════
-//  抓取單支股票
-//  台股 → TWSE/TPEX openapi（免 proxy，盤後收盤價）
-//  期貨/外匯 → Yahoo Finance + proxy
+// 抓取單支股票
 // ═══════════════════════════════════════════
-
-// 判斷是否為台股（非 =X / =F 結尾）
-function isTwStock(yahoo) {
-    return !yahoo.includes('=');
-}
-
-// 從 TWSE cache 找個股資料
-function findTwseData(yahoo) {
-    const code = yahoo.replace(/\.TWO?$/i, '').toUpperCase();
-    if (yahoo === '^TWII') {
-        // 加權指數從 MI_INDEX
-        if (!indexCache) return null;
-        const row = indexCache.find(r => r['指數'] === '發行量加權股價指數');
-        if (!row) return null;
-        const price = parseFloat(row['收盤指數'].replace(/,/g,''));
-        const diff  = row['漲跌'] === '+' ? parseFloat(row['漲跌點數']) : -parseFloat(row['漲跌點數']);
-        const prev  = price - diff;
-        return { price, prev, vol: null, time: '收盤' };
-    }
-    // 上櫃
-    if (OTC_CODES.has(code)) {
-        if (!tpexCache) return null;
-        const row = tpexCache.find(r => r['SecuritiesCompanyCode'] === code || r['代號'] === code);
-        if (!row) return null;
-        const price = parseFloat((row['收盤'] || row['Close'] || '0').replace(/,/g,''));
-        const prev  = parseFloat((row['昨收'] || row['PreviousClose'] || '0').replace(/,/g,''));
-        const vol   = row['成交股數'] || row['Volume'] || null;
-        return { price, prev, vol, time: '收盤' };
-    }
-    // 上市
-    if (!twseCache) return null;
-    const row = twseCache.find(r => r['證券代號'] === code);
-    if (!row) return null;
-    const price = parseFloat((row['收盤價'] || '0').replace(/,/g,''));
-    const prev  = parseFloat((row['昨收'] || row['前日收盤價'] || '0').replace(/,/g,''));
-    const vol   = row['成交股數'] || null;
-    return { price, prev, vol, time: '收盤' };
-}
-
-async function fetchOneTwse(i) {
-    const pEl = document.getElementById(`price-${i}`);
-    const d   = findTwseData(stocks[i].yahoo);
-    if (!d || !d.price) {
-        pEl.textContent = '無資料'; pEl.className = 'current-price error-text';
-        const tEl = document.getElementById(`time-${i}`);
-        if (tEl) tEl.textContent = '盤後資料尚未更新';
-        return;
-    }
-    applyPriceToCard(i, d.price, d.prev, d.vol, d.time, false);
-}
-
-async function fetchOneYahoo(i) {
+async function fetchOne(i) {
     const sym = stocks[i].yahoo;
     const pEl = document.getElementById(`price-${i}`);
+    if (!sym) { 
+        pEl.textContent='未填代號'; 
+        pEl.className='current-price error-text'; 
+        return; 
+    }
+
     const hosts = ['query1.finance.yahoo.com','query2.finance.yahoo.com'];
-    const url   = `https://${hosts[i%2]}/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`;
+    const url = `https://${hosts[i%2]}/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`;
 
     let result = null;
     for (let a = 0; a < PROXIES.length; a++) {
         const idx = (bestProxy + a) % PROXIES.length;
-        const p   = PROXIES[idx];
+        const p = PROXIES[idx];
         try {
             const ctrl = new AbortController();
-            const tid  = setTimeout(() => ctrl.abort(), 14000);
-            const res  = await fetch(p.fn(url), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
+            const tid = setTimeout(() => ctrl.abort(), 14000);
+            const res = await fetch(p.fn(url), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
             clearTimeout(tid);
             if (res.status === 429) { await sleep(500); continue; }
             if (!res.ok) continue;
@@ -434,147 +384,147 @@ async function fetchOneYahoo(i) {
             break;
         } catch(e) { continue; }
     }
+
     if (!result) {
-        pEl.textContent = '連線失敗'; pEl.className = 'current-price error-text';
-        const tEl = document.getElementById(`time-${i}`);
-        if (tEl) tEl.textContent = '所有 Proxy 失敗';
+        // Proxy 全失敗 → 使用上次成功價格（超重要！）
+        const savedPrice = stocks[i].current;
+        if (savedPrice) {
+            const fd = stocks[i].dp ?? 2;
+            pEl.textContent = parseFloat(savedPrice).toFixed(fd);
+            pEl.className = 'current-price';
+            const tEl = document.getElementById(`time-${i}`);
+            if (tEl) {
+                tEl.textContent = '⚠️ 使用上次資料';
+                tEl.className = 'data-time stale';
+            }
+        } else {
+            pEl.textContent = '連線失敗';
+            pEl.className = 'current-price error-text';
+            const tEl = document.getElementById(`time-${i}`);
+            if (tEl) tEl.textContent = '所有 Proxy 失敗';
+        }
         return;
     }
+
     const meta = result.meta;
     const price = meta.regularMarketPrice;
-    const prev  = meta.chartPreviousClose ?? meta.previousClose;
+    const prev = meta.chartPreviousClose ?? meta.previousClose;
     if (!price) return;
 
-    // 成交量
-    const vol = meta.regularMarketVolume;
+    const fd = stocks[i].dp ?? 2;
+    const diff = price - prev;
+    const pct = (diff / prev) * 100;
+    const cc = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
 
-    // 時間
-    let timeStr = '';
+    stocks[i].current = price;
+    document.getElementById(`inp-cur-${i}`).value = price;
+
+    // 價格
+    pEl.className = `current-price ${cc}`;
+    pEl.textContent = price.toFixed(fd);
+
+    // 漲跌
+    const cEl = document.getElementById(`chg-${i}`);
+    const arrow = diff>0?'▲':diff<0?'▼':'';
+    cEl.textContent = `${arrow} ${Math.abs(diff).toFixed(fd)} (${pct>0?'+':''}${pct.toFixed(2)}%)`;
+    cEl.className = `price-change ${cc}`;
+
+    // 卡片邊框
+    const card = pEl.closest('.card');
+    card.classList.toggle('up-card', diff > 0);
+    card.classList.toggle('down-card', diff < 0);
+
+    // 成交量
+    const vEl = document.getElementById(`vol-${i}`);
+    if (vEl && meta.regularMarketVolume != null)
+        vEl.textContent = Number(meta.regularMarketVolume).toLocaleString();
+
+    // 資料時間
     if (meta.regularMarketTime) {
-        const dt   = new Date(meta.regularMarketTime * 1000);
+        const dt = new Date(meta.regularMarketTime * 1000);
         const twDt = new Date(dt.toLocaleString('en-US',{timeZone:'Asia/Taipei'}));
         const hhmm = `${String(twDt.getHours()).padStart(2,'0')}:${String(twDt.getMinutes()).padStart(2,'0')}`;
-        const ago  = Math.round((Date.now() - dt.getTime()) / 60000);
-        timeStr = `${hhmm}（${ago}分前）`;
+        const ago = Math.round((Date.now() - dt.getTime()) / 60000);
+        const tEl = document.getElementById(`time-${i}`);
+        if (tEl) { 
+            tEl.textContent=`${hhmm}（${ago}分前）`; 
+            tEl.className=`data-time${ago>30?' stale':''}`; 
+        }
     }
 
-    applyPriceToCard(i, price, prev, vol, timeStr, true);
-
-    // 走勢圖（只有 Yahoo 有 intraday 資料）
-    const allTs  = result.timestamp || [];
+    // 走勢圖
+    const allTs = result.timestamp || [];
     const closes = result.indicators?.quote?.[0]?.close || [];
     const dTs=[], dPs=[];
     if (allTs.length) {
         const todayStr = new Date(allTs[allTs.length-1]*1000).toDateString();
         for (let j=0; j<allTs.length; j++) {
-            if (closes[j]!=null && new Date(allTs[j]*1000).toDateString()===todayStr)
-                { dTs.push(allTs[j]); dPs.push(closes[j]); }
+            if (closes[j]!=null && new Date(allTs[j]*1000).toDateString()===todayStr) {
+                dTs.push(allTs[j]); dPs.push(closes[j]);
+            }
         }
         if (dPs.length > 1) drawChart(i, dTs, dPs, prev);
-    }
-}
-
-// 共用：把價格資料套用到卡片上
-function applyPriceToCard(i, price, prev, vol, timeStr, hasAgoMin) {
-    const pEl  = document.getElementById(`price-${i}`);
-    const cEl  = document.getElementById(`chg-${i}`);
-    const vEl  = document.getElementById(`vol-${i}`);
-    const tEl  = document.getElementById(`time-${i}`);
-    const fd   = stocks[i].dp ?? 2;
-    const diff = price - prev;
-    const pct  = prev ? (diff / prev) * 100 : 0;
-    const cc   = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
-
-    stocks[i].current = price;
-    document.getElementById(`inp-cur-${i}`).value = price;
-
-    pEl.className   = `current-price ${cc}`;
-    pEl.textContent = price.toFixed(fd);
-
-    const arrow = diff>0?'▲':diff<0?'▼':'';
-    cEl.textContent = `${arrow} ${Math.abs(diff).toFixed(fd)}  (${pct>0?'+':''}${pct.toFixed(2)}%)`;
-    cEl.className   = `price-change ${cc}`;
-
-    const card = pEl.closest('.card');
-    card.classList.toggle('up-card',   diff > 0);
-    card.classList.toggle('down-card', diff < 0);
-
-    if (vEl && vol != null) vEl.textContent = Number(vol).toLocaleString();
-
-    if (tEl && timeStr) {
-        tEl.textContent = timeStr;
-        // 如果是 Yahoo 的 ago 分鐘字串，超過 30 分鐘標橘色
-        tEl.className = `data-time${hasAgoMin && timeStr.includes('分前') && parseInt(timeStr.match(/\d+/)?.[1]||'0')>30 ? ' stale' : ''}`;
     }
 
     calculateAll(i);
 }
 
-async function fetchOne(i) {
-    if (isTwStock(stocks[i].yahoo)) {
-        await fetchOneTwse(i);
-    } else {
-        await fetchOneYahoo(i);
-    }
-}
-
 // ═══════════════════════════════════════════
-//  主更新
+// 主更新
 // ═══════════════════════════════════════════
 let isFetching = false;
 async function fetchAll() {
     if (isFetching) return;
     isFetching = true;
     const btn = document.getElementById('updateBtn');
+    const txt = document.getElementById('statusTxt');
     btn.disabled = true;
-    btn.textContent = '載入 TWSE…';
-
-    // 先批次抓 TWSE openapi（一次請求涵蓋所有台股）
-    await loadTwseCache();
+    if (txt) txt.textContent = '🔄 同步資料中…';
 
     for (let i = 0; i < stocks.length; i++) {
         btn.textContent = `同步中… (${i+1}/${stocks.length})`;
         await fetchOne(i);
-        // 只有 Yahoo 請求需要間隔（TWSE 已快取，只有期貨/外匯走 proxy）
-        if (i < stocks.length-1 && !isTwStock(stocks[i].yahoo)) await sleep(350);
+        if (i < stocks.length-1) await sleep(350);
     }
+
+    // 保存完整資料（包含新增股票）
     try {
-        localStorage.setItem('stockDataV4', JSON.stringify(
-            stocks.map(s => ({ highest:s.highest, low:s.low, current:s.current }))
-        ));
+        localStorage.setItem('stockDataV4', JSON.stringify(stocks));
     } catch(e) {}
+
     btn.textContent = '✅ 同步完成';
-    setTimeout(() => { btn.disabled=false; btn.textContent='⟳ \u00a0同步最新報價'; }, 2000);
+    if (txt) refreshStatus();
+    setTimeout(() => { 
+        btn.disabled = false; 
+        btn.textContent = '⟳ &nbsp;同步最新報價'; 
+    }, 2000);
     isFetching = false;
 }
-
-function manualRefresh() { countdown = AUTO_SEC; fetchAll(); }
+function manualRefresh() { 
+    countdown = AUTO_SEC; 
+    fetchAll(); 
+}
 
 // ═══════════════════════════════════════════
-//  倒數計時器（開盤才自動觸發）
+// 倒數計時器
 // ═══════════════════════════════════════════
 const AUTO_SEC = 30;
 let countdown = AUTO_SEC;
-
 setInterval(() => {
-    const bar = document.getElementById('statusBar');
-    const txt = document.getElementById('statusTxt');
-    if (!bar || !txt) return;
-
     if (isTradingHours()) {
         countdown--;
-        bar.className = countdown <= 5 ? 'soon' : 'trading';
-        txt.textContent = statusLabel(countdown);
-        if (countdown <= 0) { countdown = AUTO_SEC; fetchAll(); }
+        if (countdown <= 0) { 
+            countdown = AUTO_SEC; 
+            fetchAll(); 
+        }
     } else {
-        bar.className = '';
-        txt.textContent = statusLabel(0);
-        countdown = AUTO_SEC;  // 重置，開盤時從 30 開始
+        countdown = AUTO_SEC;
     }
+    refreshStatus();
 }, 1000);
 
 // ═══════════════════════════════════════════
-//  走勢圖
+// 走勢圖
 // ═══════════════════════════════════════════
 const chartInst = {};
 function drawChart(i, timestamps, prices, prevClose) {
@@ -583,78 +533,137 @@ function drawChart(i, timestamps, prices, prevClose) {
     const cont = canvas.parentElement;
     const w = cont.clientWidth || 360, h = cont.clientHeight || 100;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width=w*dpr; canvas.height=h*dpr;
-    canvas.style.width=w+'px'; canvas.style.height=h+'px';
+    canvas.width = w * dpr; 
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px'; 
+    canvas.style.height = h + 'px';
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
 
     const last = prices[prices.length-1], isUp = last >= prevClose;
-    const mc   = isUp ? '#ff4d6d' : '#00d68f';
+    const mc = isUp ? '#ff4d6d' : '#00d68f';
     const grad = ctx.createLinearGradient(0,0,0,h);
     grad.addColorStop(0, isUp ? 'rgba(255,77,109,0.25)' : 'rgba(0,214,143,0.25)');
     grad.addColorStop(1, 'rgba(0,0,0,0)');
+
     const labels = timestamps.map(t => {
-        const d=new Date(t*1000);
+        const d = new Date(t*1000);
         return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     });
+
     if (chartInst[i]) { chartInst[i].destroy(); chartInst[i]=null; }
+
     chartInst[i] = new Chart(ctx, {
         type:'line',
-        data:{ labels, datasets:[{ data:prices, borderColor:mc, backgroundColor:grad,
-            borderWidth:2, pointRadius:0, pointHoverRadius:4, fill:true, tension:0.1 }] },
+        data:{ 
+            labels, 
+            datasets:[{ 
+                data:prices, 
+                borderColor:mc, 
+                backgroundColor:grad,
+                borderWidth:2, 
+                pointRadius:0, 
+                pointHoverRadius:4, 
+                fill:true, 
+                tension:0.1 
+            }] 
+        },
         options:{
-            responsive:false, maintainAspectRatio:false, animation:{duration:0},
+            responsive:false, 
+            maintainAspectRatio:false, 
+            animation:{duration:0},
             plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false} },
-            scales:{ x:{display:false}, y:{display:false, min:Math.min(...prices)*0.999, max:Math.max(...prices)*1.001} },
+            scales:{ 
+                x:{display:false}, 
+                y:{display:false, min:Math.min(...prices)*0.999, max:Math.max(...prices)*1.001} 
+            },
             layout:{padding:0}
         }
     });
 }
 
 // ═══════════════════════════════════════════
-//  計算
+// 計算
 // ═══════════════════════════════════════════
 function calculateAll(i) {
     const high = parseFloat(stocks[i].highest)||0;
-    const low  = parseFloat(stocks[i].low)||0;
-    const cur  = parseFloat(stocks[i].current);
-    const fd   = stocks[i].dp ?? 2;
-    const pEl  = document.getElementById(`price-${i}`);
-    const dEl  = document.getElementById(`diff-${i}`);
+    const low = parseFloat(stocks[i].low)||0;
+    const cur = parseFloat(stocks[i].current);
+    const fd = stocks[i].dp ?? 2;
+    const pEl = document.getElementById(`price-${i}`);
+    const dEl = document.getElementById(`diff-${i}`);
+
     if (!pEl.classList.contains('error-text') && !pEl.classList.contains('loading-text'))
         pEl.textContent = isNaN(cur) ? '—' : cur.toFixed(fd);
-    if (isNaN(cur)||high===0) { dEl.textContent='—'; dEl.className='result-val'; }
-    else {
+
+    if (isNaN(cur)||high===0) { 
+        dEl.textContent='—'; 
+        dEl.className='result-val'; 
+    } else {
         const d=cur-high, p=(d/high)*100, s=d>0?'+':'';
         dEl.innerHTML=`${s}${d.toFixed(fd)}&nbsp;(${s}${p.toFixed(2)}%)`;
         dEl.className=`result-val ${d>0?'up':d<0?'down':''}`;
     }
+
     if (high>0) {
         [5,10,15,20,25,30].forEach(p => {
             const target = high*(1-p/100);
-            const el     = document.getElementById(`dp-${p}-${i}`);
-            const hit    = !isNaN(cur) && cur <= target;
+            const el = document.getElementById(`dp-${p}-${i}`);
+            const hit = !isNaN(cur) && cur <= target;
             el.innerHTML = (hit ? '<span class="hit-star">&#9733;</span>' : '') + target.toFixed(fd);
             el.closest('.grid-item').classList.toggle('hit', hit);
         });
+
         const range=high-low;
         [236,382,500,618].forEach(f =>
             document.getElementById(`fib-${f}-${i}`).textContent=(high-range*(f/1000)).toFixed(fd));
     }
 }
+
 function onInputChange(i) {
     stocks[i].highest = document.getElementById(`inp-hi-${i}`).value;
-    stocks[i].low     = document.getElementById(`inp-lo-${i}`).value;
+    stocks[i].low = document.getElementById(`inp-lo-${i}`).value;
     stocks[i].current = document.getElementById(`inp-cur-${i}`).value;
     calculateAll(i);
+    // 即時保存
+    localStorage.setItem('stockDataV4', JSON.stringify(stocks));
 }
+
 function onYahooChange(i) {
     stocks[i].yahoo = document.getElementById(`inp-sym-${i}`).value.trim();
     fetchOne(i);
 }
 
+// 新增股票功能
+function addNewStock() {
+    const input = document.getElementById('newCode');
+    let val = input.value.trim().toUpperCase();
+    if (!val) return;
+
+    let cleanCode = val;
+    if (cleanCode.endsWith('.TW')) cleanCode = cleanCode.slice(0, -3);
+    else if (cleanCode.includes('=')) cleanCode = cleanCode.split('=')[0];
+
+    const newStock = {
+        group: '📊 自選',
+        code: cleanCode,
+        yahoo: val.includes('.') || val.includes('=') ? val : val + '.TW',
+        highest: 0,
+        low: '',
+        current: '',
+        dp: (val.includes('=') || val.includes('F')) ? 4 : 2
+    };
+
+    stocks.push(newStock);
+    localStorage.setItem('stockDataV4', JSON.stringify(stocks));
+
+    render();
+    fetchOne(stocks.length - 1);
+    input.value = '';
+}
+
 // ═══════════════════════════════════════════
-//  渲染
+// 渲染
 // ═══════════════════════════════════════════
 function render() {
     const cont = document.getElementById('cards-container');
@@ -682,9 +691,7 @@ function render() {
                     <div class="data-time" id="time-${i}"></div>
                 </div>
             </div>
-
             <div class="chart-container"><canvas id="chart-${i}"></canvas></div>
-
             <div class="calc-inputs">
                 <div class="input-group">
                     <label>目前價格</label>
@@ -703,7 +710,6 @@ function render() {
                     <div class="result-val" id="diff-${i}">—</div>
                 </div>
             </div>
-
             <div class="grid-section">
                 <div class="grid-title">回檔目標價</div>
                 <div class="data-grid">
@@ -731,6 +737,7 @@ function render() {
 
 // ── 啟動 ──
 render();
+refreshStatus();   // 立即顯示正確狀態
 fetchAll();
 </script>
 </body>
