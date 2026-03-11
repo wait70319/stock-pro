@@ -51,9 +51,9 @@
         }
         h2 { font-size:20px; font-weight:700; letter-spacing:0.02em; }
         .header-sub { color:var(--text-secondary); font-size:12px; margin-top:2px; }
-        .header-right { 
-            display:flex; flex-direction:column; align-items:flex-end; gap:8px; 
-            width: 100%; max-width: 420px;
+        .header-right {
+            display:flex; flex-direction:column; align-items:flex-end; gap:8px;
+            width:100%; max-width:420px;
         }
         /* ── 新增股票 ── */
         .add-stock-row {
@@ -193,33 +193,31 @@
         .grid-item:hover { transform:translateY(-1px); }
         .item-label { font-size:10px; margin-bottom:4px; font-family:'JetBrains Mono',monospace; }
         .item-value { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; }
-        .grid-item.drop-5 { background:rgba(56,189,248,.10); border:1px solid rgba(56,189,248,.45); border-left:3px solid #38bdf8; }
-        .grid-item.drop-5 .item-label{color:#7dd3fc} .grid-item.drop-5 .item-value{color:#38bdf8}
-        .grid-item.drop-10 { background:rgba(99,210,160,.10); border:1px solid rgba(99,210,160,.45); border-left:3px solid #63d2a0; }
+        .grid-item.drop-5  { background:rgba(56,189,248,.10);  border:1px solid rgba(56,189,248,.45);  border-left:3px solid #38bdf8; }
+        .grid-item.drop-5  .item-label{color:#7dd3fc} .grid-item.drop-5  .item-value{color:#38bdf8}
+        .grid-item.drop-10 { background:rgba(99,210,160,.10);  border:1px solid rgba(99,210,160,.45);  border-left:3px solid #63d2a0; }
         .grid-item.drop-10 .item-label{color:#9de8c4} .grid-item.drop-10 .item-value{color:#63d2a0}
-        .grid-item.drop-15 { background:rgba(250,204,21,.10); border:1px solid rgba(250,204,21,.45); border-left:3px solid #facc15; }
+        .grid-item.drop-15 { background:rgba(250,204,21,.10);  border:1px solid rgba(250,204,21,.45);  border-left:3px solid #facc15; }
         .grid-item.drop-15 .item-label{color:#fde68a} .grid-item.drop-15 .item-value{color:#facc15}
-        .grid-item.drop-20 { background:rgba(251,146,60,.12); border:1px solid rgba(251,146,60,.50); border-left:3px solid #fb923c; }
+        .grid-item.drop-20 { background:rgba(251,146,60,.12);  border:1px solid rgba(251,146,60,.50);  border-left:3px solid #fb923c; }
         .grid-item.drop-20 .item-label{color:#fdba74} .grid-item.drop-20 .item-value{color:#fb923c}
         .grid-item.drop-25 { background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.50); border-left:3px solid #f87171; }
         .grid-item.drop-25 .item-label{color:#fca5a5} .grid-item.drop-25 .item-value{color:#f87171}
-        .grid-item.drop-30 { background:rgba(239,68,68,.16); border:1px solid rgba(239,68,68,.60); border-left:3px solid #ef4444; }
+        .grid-item.drop-30 { background:rgba(239,68,68,.16);   border:1px solid rgba(239,68,68,.60);   border-left:3px solid #ef4444; }
         .grid-item.drop-30 .item-label{color:#fca5a5} .grid-item.drop-30 .item-value{color:#ef4444;font-size:14px}
         .grid-item.fib-236 { background:rgba(167,139,250,.10); border:1px solid rgba(167,139,250,.40); border-left:3px solid #a78bfa; }
         .grid-item.fib-236 .item-label{color:#c4b5fd} .grid-item.fib-236 .item-value{color:#a78bfa}
-        .grid-item.fib-382 { background:rgba(139,92,246,.12); border:1px solid rgba(139,92,246,.50); border-left:3px solid #8b5cf6; }
+        .grid-item.fib-382 { background:rgba(139,92,246,.12);  border:1px solid rgba(139,92,246,.50);  border-left:3px solid #8b5cf6; }
         .grid-item.fib-382 .item-label{color:#c4b5fd} .grid-item.fib-382 .item-value{color:#8b5cf6}
-        .grid-item.fib-500 { background:rgba(109,40,217,.16); border:1px solid rgba(124,58,237,.55); border-left:3px solid #7c3aed; }
+        .grid-item.fib-500 { background:rgba(109,40,217,.16);  border:1px solid rgba(124,58,237,.55);  border-left:3px solid #7c3aed; }
         .grid-item.fib-500 .item-label{color:#c4b5fd} .grid-item.fib-500 .item-value{color:#c084fc}
-        .grid-item.fib-618 { background:rgba(88,28,135,.22); border:1px solid rgba(168,85,247,.65); border-left:3px solid #a855f7; }
+        .grid-item.fib-618 { background:rgba(88,28,135,.22);   border:1px solid rgba(168,85,247,.65);  border-left:3px solid #a855f7; }
         .grid-item.fib-618 .item-label{color:#e9d5ff} .grid-item.fib-618 .item-value{color:#e879f9;font-size:14px}
         /* ── 已達標 ── */
         .grid-item.hit { outline:2px solid #facc15; outline-offset:-1px; }
         .hit-star {
-            display:block;
-            font-size:14px; line-height:1; margin-bottom:2px;
-            color:#facc15;
-            filter:drop-shadow(0 0 4px rgba(250,204,21,0.8));
+            display:block; font-size:14px; line-height:1; margin-bottom:2px;
+            color:#facc15; filter:drop-shadow(0 0 4px rgba(250,204,21,0.8));
         }
         /* ── Footer ── */
         .footer-bar { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
@@ -247,9 +245,8 @@
             </div>
         </div>
         <div class="header-right">
-            <!-- 新增股票 -->
             <div class="add-stock-row">
-                <input id="newCode" placeholder="新增代碼 如 2330 / GC=F / ^TWII" 
+                <input id="newCode" placeholder="新增代碼 如 2330 / GC=F / ^TWII"
                        onkeypress="if(event.key==='Enter') addNewStock()">
                 <button onclick="addNewStock()">+ 新增</button>
             </div>
@@ -259,7 +256,7 @@
     </div>
     <div id="cards-container"></div>
     <div class="footer-bar">
-        <div class="note">Yahoo Finance · 多重 Proxy · 開盤 09:00–13:50 每 30 秒自動更新</div>
+        <div class="note">Yahoo Finance · 6 個備用 Proxy 輪換 · 開盤 09:00–13:50 每 30 秒自動更新</div>
         <div id="proxyStatus"></div>
     </div>
 </div>
@@ -269,49 +266,44 @@
 // 股票清單
 // ═══════════════════════════════════════════
 const DEFAULT = [
-    { group:'📊 台灣股市', code:'台灣加權', yahoo:'^TWII', highest:35414.54, low:'26434.94', current:'', dp:2 },
-    { group:'📊 台灣股市', code:'00982A', yahoo:'00982A.TW', highest:16.76, low:'', current:'', dp:2 },
-    { group:'📊 台灣股市', code:'009805', yahoo:'009805.TW', highest:15.19, low:'', current:'', dp:2 },
-    { group:'📊 台灣股市', code:'00949', yahoo:'00949.TW', highest:20.88, low:'', current:'', dp:2 },
-    { group:'🛢 商品期貨', code:'黃金期貨 XAU', yahoo:'GC=F', highest:0, low:'', current:'', dp:2 },
-    { group:'🛢 商品期貨', code:'原油期貨 WTI', yahoo:'CL=F', highest:0, low:'', current:'', dp:2 },
-    { group:'💱 外匯', code:'美元/日元', yahoo:'JPY=X', highest:0, low:'', current:'', dp:4 },
-    { group:'💱 外匯', code:'日元/台幣', yahoo:'JPYTWD=X', highest:0, low:'', current:'', dp:4 },
+    { group:'📊 台灣股市', code:'台灣加權',     yahoo:'^TWII',     highest:35414.54, low:'26434.94', current:'', dp:2 },
+    { group:'📊 台灣股市', code:'00982A',       yahoo:'00982A.TW', highest:16.76,    low:'',         current:'', dp:2 },
+    { group:'📊 台灣股市', code:'009805',       yahoo:'009805.TW', highest:15.19,    low:'',         current:'', dp:2 },
+    { group:'📊 台灣股市', code:'00949',        yahoo:'00949.TW',  highest:20.88,    low:'',         current:'', dp:2 },
+    { group:'🛢 商品期貨', code:'黃金期貨 XAU', yahoo:'GC=F',      highest:0, low:'', current:'', dp:2 },
+    { group:'🛢 商品期貨', code:'原油期貨 WTI', yahoo:'CL=F',      highest:0, low:'', current:'', dp:2 },
+    { group:'💱 外匯',    code:'美元/日元',    yahoo:'JPY=X',     highest:0, low:'', current:'', dp:4 },
+    { group:'💱 外匯',    code:'日元/台幣',    yahoo:'JPYTWD=X',  highest:0, low:'', current:'', dp:4 },
 ];
 
-// 從 localStorage 還原（完整支援新增股票 + 舊資料相容）
 let stocks = [];
 try {
     const saved = JSON.parse(localStorage.getItem('stockDataV4') || '[]');
     if (saved.length > 0 && saved[0].group) {
-        // 新格式（完整物件）
         stocks = saved;
     } else {
-        // 舊格式或首次使用
         stocks = DEFAULT.map((def, i) => {
             const sv = saved[i] || {};
             return { ...def,
                 highest: sv.highest !== undefined ? sv.highest : def.highest,
-                low: sv.low !== undefined ? sv.low : def.low,
+                low:     sv.low     !== undefined ? sv.low     : def.low,
                 current: sv.current !== undefined ? sv.current : def.current,
             };
         });
     }
-} catch(e) {
-    stocks = DEFAULT.map(d => ({...d}));
-}
+} catch(e) { stocks = DEFAULT.map(d => ({...d})); }
 
 // ═══════════════════════════════════════════
-// Proxy
+// Proxy 清單（6個，依股票 index 輪換起點）
 // ═══════════════════════════════════════════
 const PROXIES = [
-    { fn: u => `https://corsproxy.io/?${encodeURIComponent(u)}`, wrap:false },
-    { fn: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`, wrap:false },
-    { fn: u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`, wrap:true },
-    { fn: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, wrap:false },
-    { fn: u => `https://corsproxy.org/?${encodeURIComponent(u)}`, wrap:false },
+    { fn: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,        wrap:false },
+    { fn: u => `https://corsproxy.io/?${encodeURIComponent(u)}`,                     wrap:false },
+    { fn: u => `https://corsproxy.org/?${encodeURIComponent(u)}`,                    wrap:false },
+    { fn: u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,        wrap:true  },
+    { fn: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,   wrap:false },
+    { fn: u => `https://thingproxy.freeboard.io/fetch/${u}`,                         wrap:false },
 ];
-let bestProxy = 0;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // ═══════════════════════════════════════════
@@ -334,8 +326,6 @@ function statusLabel(sec) {
     if (m < 540) { const d=540-m; return `開盤還有 ${Math.floor(d/60)}h${d%60}m`; }
     return '今日已收盤';
 }
-
-// 新增：立即更新狀態列（解決「計算中…」卡住問題）
 function refreshStatus() {
     const bar = document.getElementById('statusBar');
     const txt = document.getElementById('statusTxt');
@@ -351,34 +341,46 @@ function refreshStatus() {
 
 // ═══════════════════════════════════════════
 // 抓取單支股票
+// 關鍵修正：每支股票從不同 proxy 起點開始，
+// 避免多支同時打爆同一個 proxy
 // ═══════════════════════════════════════════
 async function fetchOne(i) {
     const sym = stocks[i].yahoo;
     const pEl = document.getElementById(`price-${i}`);
-    if (!sym) { 
-        pEl.textContent='未填代號'; 
-        pEl.className='current-price error-text'; 
-        return; 
+    if (!sym) {
+        pEl.textContent = '未填代號';
+        pEl.className = 'current-price error-text';
+        return;
     }
 
-    const hosts = ['query1.finance.yahoo.com','query2.finance.yahoo.com'];
-    const url = `https://${hosts[i%2]}/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`;
+    // Yahoo host 輪換（2個主機交替）
+    const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
+    const host  = hosts[i % 2];
+    const url   = `https://${host}/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`;
 
+    // ★ 核心修正：每支股票從不同的 proxy 開始嘗試
+    // 第0支從 proxy 0 開始，第1支從 proxy 1 開始，以此類推
+    // 這樣 8 支股票就分散到 6 個 proxy，不會集中打同一個
+    const proxyStart = i % PROXIES.length;
     let result = null;
+
     for (let a = 0; a < PROXIES.length; a++) {
-        const idx = (bestProxy + a) % PROXIES.length;
-        const p = PROXIES[idx];
+        const idx = (proxyStart + a) % PROXIES.length;
+        const p   = PROXIES[idx];
         try {
             const ctrl = new AbortController();
-            const tid = setTimeout(() => ctrl.abort(), 14000);
-            const res = await fetch(p.fn(url), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
+            const tid  = setTimeout(() => ctrl.abort(), 14000);
+            const res  = await fetch(p.fn(url), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
             clearTimeout(tid);
-            if (res.status === 429) { await sleep(500); continue; }
+            if (res.status === 429) {
+                // rate limit：等待後換下一個 proxy
+                await sleep(800 + Math.random() * 400);
+                continue;
+            }
             if (!res.ok) continue;
             let json = await res.json();
             if (p.wrap && json.contents) json = JSON.parse(json.contents);
             if (!json?.chart?.result?.[0]) continue;
-            bestProxy = idx;
             result = json.chart.result[0];
             document.getElementById('proxyStatus').textContent = `P${idx+1}✓`;
             break;
@@ -386,17 +388,14 @@ async function fetchOne(i) {
     }
 
     if (!result) {
-        // Proxy 全失敗 → 使用上次成功價格（超重要！）
+        // 全失敗 → 保留上次成功的價格，標示警告
         const savedPrice = stocks[i].current;
         if (savedPrice) {
             const fd = stocks[i].dp ?? 2;
             pEl.textContent = parseFloat(savedPrice).toFixed(fd);
             pEl.className = 'current-price';
             const tEl = document.getElementById(`time-${i}`);
-            if (tEl) {
-                tEl.textContent = '⚠️ 使用上次資料';
-                tEl.className = 'data-time stale';
-            }
+            if (tEl) { tEl.textContent = '⚠️ 使用上次資料'; tEl.className = 'data-time stale'; }
         } else {
             pEl.textContent = '連線失敗';
             pEl.className = 'current-price error-text';
@@ -406,60 +405,55 @@ async function fetchOne(i) {
         return;
     }
 
-    const meta = result.meta;
+    const meta  = result.meta;
     const price = meta.regularMarketPrice;
-    const prev = meta.chartPreviousClose ?? meta.previousClose;
+    const prev  = meta.chartPreviousClose ?? meta.previousClose;
     if (!price) return;
 
-    const fd = stocks[i].dp ?? 2;
+    const fd   = stocks[i].dp ?? 2;
     const diff = price - prev;
-    const pct = (diff / prev) * 100;
-    const cc = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
+    const pct  = (diff / prev) * 100;
+    const cc   = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
 
     stocks[i].current = price;
     document.getElementById(`inp-cur-${i}`).value = price;
 
-    // 價格
-    pEl.className = `current-price ${cc}`;
+    pEl.className   = `current-price ${cc}`;
     pEl.textContent = price.toFixed(fd);
 
-    // 漲跌
-    const cEl = document.getElementById(`chg-${i}`);
-    const arrow = diff>0?'▲':diff<0?'▼':'';
+    const cEl   = document.getElementById(`chg-${i}`);
+    const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '';
     cEl.textContent = `${arrow} ${Math.abs(diff).toFixed(fd)} (${pct>0?'+':''}${pct.toFixed(2)}%)`;
-    cEl.className = `price-change ${cc}`;
+    cEl.className   = `price-change ${cc}`;
 
-    // 卡片邊框
     const card = pEl.closest('.card');
-    card.classList.toggle('up-card', diff > 0);
+    card.classList.toggle('up-card',   diff > 0);
     card.classList.toggle('down-card', diff < 0);
 
-    // 成交量
     const vEl = document.getElementById(`vol-${i}`);
     if (vEl && meta.regularMarketVolume != null)
         vEl.textContent = Number(meta.regularMarketVolume).toLocaleString();
 
-    // 資料時間
     if (meta.regularMarketTime) {
-        const dt = new Date(meta.regularMarketTime * 1000);
+        const dt   = new Date(meta.regularMarketTime * 1000);
         const twDt = new Date(dt.toLocaleString('en-US',{timeZone:'Asia/Taipei'}));
         const hhmm = `${String(twDt.getHours()).padStart(2,'0')}:${String(twDt.getMinutes()).padStart(2,'0')}`;
-        const ago = Math.round((Date.now() - dt.getTime()) / 60000);
-        const tEl = document.getElementById(`time-${i}`);
-        if (tEl) { 
-            tEl.textContent=`${hhmm}（${ago}分前）`; 
-            tEl.className=`data-time${ago>30?' stale':''}`; 
+        const ago  = Math.round((Date.now() - dt.getTime()) / 60000);
+        const tEl  = document.getElementById(`time-${i}`);
+        if (tEl) {
+            tEl.textContent = `${hhmm}（${ago}分前）`;
+            tEl.className   = `data-time${ago > 30 ? ' stale' : ''}`;
         }
     }
 
     // 走勢圖
-    const allTs = result.timestamp || [];
+    const allTs  = result.timestamp || [];
     const closes = result.indicators?.quote?.[0]?.close || [];
-    const dTs=[], dPs=[];
+    const dTs = [], dPs = [];
     if (allTs.length) {
         const todayStr = new Date(allTs[allTs.length-1]*1000).toDateString();
-        for (let j=0; j<allTs.length; j++) {
-            if (closes[j]!=null && new Date(allTs[j]*1000).toDateString()===todayStr) {
+        for (let j = 0; j < allTs.length; j++) {
+            if (closes[j] != null && new Date(allTs[j]*1000).toDateString() === todayStr) {
                 dTs.push(allTs[j]); dPs.push(closes[j]);
             }
         }
@@ -470,53 +464,40 @@ async function fetchOne(i) {
 }
 
 // ═══════════════════════════════════════════
-// 主更新
+// 主更新（序列執行，間隔 500ms）
 // ═══════════════════════════════════════════
 let isFetching = false;
 async function fetchAll() {
     if (isFetching) return;
     isFetching = true;
     const btn = document.getElementById('updateBtn');
-    const txt = document.getElementById('statusTxt');
     btn.disabled = true;
-    if (txt) txt.textContent = '🔄 同步資料中…';
 
     for (let i = 0; i < stocks.length; i++) {
         btn.textContent = `同步中… (${i+1}/${stocks.length})`;
         await fetchOne(i);
-        if (i < stocks.length-1) await sleep(350);
+        if (i < stocks.length - 1) await sleep(500); // 每支間隔 500ms
     }
 
-    // 保存完整資料（包含新增股票）
-    try {
-        localStorage.setItem('stockDataV4', JSON.stringify(stocks));
-    } catch(e) {}
+    try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
 
     btn.textContent = '✅ 同步完成';
-    if (txt) refreshStatus();
-    setTimeout(() => { 
-        btn.disabled = false; 
-        btn.textContent = '⟳ &nbsp;同步最新報價'; 
-    }, 2000);
+    refreshStatus();
+    setTimeout(() => { btn.disabled = false; btn.textContent = '⟳ \u00a0同步最新報價'; }, 2000);
     isFetching = false;
 }
-function manualRefresh() { 
-    countdown = AUTO_SEC; 
-    fetchAll(); 
-}
+
+function manualRefresh() { countdown = AUTO_SEC; fetchAll(); }
 
 // ═══════════════════════════════════════════
-// 倒數計時器
+// 倒數計時器（開盤才觸發自動更新）
 // ═══════════════════════════════════════════
 const AUTO_SEC = 30;
 let countdown = AUTO_SEC;
 setInterval(() => {
     if (isTradingHours()) {
         countdown--;
-        if (countdown <= 0) { 
-            countdown = AUTO_SEC; 
-            fetchAll(); 
-        }
+        if (countdown <= 0) { countdown = AUTO_SEC; fetchAll(); }
     } else {
         countdown = AUTO_SEC;
     }
@@ -524,7 +505,7 @@ setInterval(() => {
 }, 1000);
 
 // ═══════════════════════════════════════════
-// 走勢圖
+// 走勢圖（手機 DPR 修正）
 // ═══════════════════════════════════════════
 const chartInst = {};
 function drawChart(i, timestamps, prices, prevClose) {
@@ -533,15 +514,13 @@ function drawChart(i, timestamps, prices, prevClose) {
     const cont = canvas.parentElement;
     const w = cont.clientWidth || 360, h = cont.clientHeight || 100;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = w * dpr; 
-    canvas.height = h * dpr;
-    canvas.style.width = w + 'px'; 
-    canvas.style.height = h + 'px';
+    canvas.width  = w * dpr; canvas.height = h * dpr;
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
 
     const last = prices[prices.length-1], isUp = last >= prevClose;
-    const mc = isUp ? '#ff4d6d' : '#00d68f';
+    const mc   = isUp ? '#ff4d6d' : '#00d68f';
     const grad = ctx.createLinearGradient(0,0,0,h);
     grad.addColorStop(0, isUp ? 'rgba(255,77,109,0.25)' : 'rgba(0,214,143,0.25)');
     grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -551,119 +530,104 @@ function drawChart(i, timestamps, prices, prevClose) {
         return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     });
 
-    if (chartInst[i]) { chartInst[i].destroy(); chartInst[i]=null; }
-
+    if (chartInst[i]) { chartInst[i].destroy(); chartInst[i] = null; }
     chartInst[i] = new Chart(ctx, {
-        type:'line',
-        data:{ 
-            labels, 
-            datasets:[{ 
-                data:prices, 
-                borderColor:mc, 
-                backgroundColor:grad,
-                borderWidth:2, 
-                pointRadius:0, 
-                pointHoverRadius:4, 
-                fill:true, 
-                tension:0.1 
-            }] 
-        },
-        options:{
-            responsive:false, 
-            maintainAspectRatio:false, 
-            animation:{duration:0},
+        type: 'line',
+        data: { labels, datasets:[{ data:prices, borderColor:mc, backgroundColor:grad,
+            borderWidth:2, pointRadius:0, pointHoverRadius:4, fill:true, tension:0.1 }] },
+        options: {
+            responsive:false, maintainAspectRatio:false, animation:{duration:0},
             plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false} },
-            scales:{ 
-                x:{display:false}, 
-                y:{display:false, min:Math.min(...prices)*0.999, max:Math.max(...prices)*1.001} 
-            },
+            scales:{ x:{display:false}, y:{display:false,
+                min:Math.min(...prices)*0.999, max:Math.max(...prices)*1.001} },
             layout:{padding:0}
         }
     });
 }
 
 // ═══════════════════════════════════════════
-// 計算
+// 計算回檔目標 / 斐波那契（含達標星星）
 // ═══════════════════════════════════════════
 function calculateAll(i) {
-    const high = parseFloat(stocks[i].highest)||0;
-    const low = parseFloat(stocks[i].low)||0;
-    const cur = parseFloat(stocks[i].current);
-    const fd = stocks[i].dp ?? 2;
-    const pEl = document.getElementById(`price-${i}`);
-    const dEl = document.getElementById(`diff-${i}`);
+    const high = parseFloat(stocks[i].highest) || 0;
+    const low  = parseFloat(stocks[i].low)     || 0;
+    const cur  = parseFloat(stocks[i].current);
+    const fd   = stocks[i].dp ?? 2;
+    const pEl  = document.getElementById(`price-${i}`);
+    const dEl  = document.getElementById(`diff-${i}`);
 
     if (!pEl.classList.contains('error-text') && !pEl.classList.contains('loading-text'))
         pEl.textContent = isNaN(cur) ? '—' : cur.toFixed(fd);
 
-    if (isNaN(cur)||high===0) { 
-        dEl.textContent='—'; 
-        dEl.className='result-val'; 
+    if (isNaN(cur) || high === 0) {
+        dEl.textContent = '—'; dEl.className = 'result-val';
     } else {
-        const d=cur-high, p=(d/high)*100, s=d>0?'+':'';
-        dEl.innerHTML=`${s}${d.toFixed(fd)}&nbsp;(${s}${p.toFixed(2)}%)`;
-        dEl.className=`result-val ${d>0?'up':d<0?'down':''}`;
+        const d = cur-high, p = (d/high)*100, s = d>0?'+':'';
+        dEl.innerHTML  = `${s}${d.toFixed(fd)}&nbsp;(${s}${p.toFixed(2)}%)`;
+        dEl.className  = `result-val ${d>0?'up':d<0?'down':''}`;
     }
 
-    if (high>0) {
+    if (high > 0) {
         [5,10,15,20,25,30].forEach(p => {
-            const target = high*(1-p/100);
-            const el = document.getElementById(`dp-${p}-${i}`);
-            const hit = !isNaN(cur) && cur <= target;
+            const target = high * (1 - p/100);
+            const el     = document.getElementById(`dp-${p}-${i}`);
+            const hit    = !isNaN(cur) && cur <= target;
             el.innerHTML = (hit ? '<span class="hit-star">&#9733;</span>' : '') + target.toFixed(fd);
             el.closest('.grid-item').classList.toggle('hit', hit);
         });
-
-        const range=high-low;
+        const range = high - low;
         [236,382,500,618].forEach(f =>
-            document.getElementById(`fib-${f}-${i}`).textContent=(high-range*(f/1000)).toFixed(fd));
+            document.getElementById(`fib-${f}-${i}`).textContent = (high - range*(f/1000)).toFixed(fd));
     }
 }
 
 function onInputChange(i) {
     stocks[i].highest = document.getElementById(`inp-hi-${i}`).value;
-    stocks[i].low = document.getElementById(`inp-lo-${i}`).value;
+    stocks[i].low     = document.getElementById(`inp-lo-${i}`).value;
     stocks[i].current = document.getElementById(`inp-cur-${i}`).value;
     calculateAll(i);
-    // 即時保存
-    localStorage.setItem('stockDataV4', JSON.stringify(stocks));
+    try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
 }
-
 function onYahooChange(i) {
     stocks[i].yahoo = document.getElementById(`inp-sym-${i}`).value.trim();
     fetchOne(i);
 }
 
-// 新增股票功能
+// ═══════════════════════════════════════════
+// 新增股票
+// ═══════════════════════════════════════════
 function addNewStock() {
     const input = document.getElementById('newCode');
     let val = input.value.trim().toUpperCase();
     if (!val) return;
 
     let cleanCode = val;
-    if (cleanCode.endsWith('.TW')) cleanCode = cleanCode.slice(0, -3);
-    else if (cleanCode.includes('=')) cleanCode = cleanCode.split('=')[0];
+    if (cleanCode.endsWith('.TW'))       cleanCode = cleanCode.slice(0, -3);
+    else if (cleanCode.includes('='))    cleanCode = cleanCode.split('=')[0];
+    else if (cleanCode.includes('.TWO')) cleanCode = cleanCode.slice(0, -4);
+
+    const isForex   = val.includes('=X');
+    const isFutures = val.includes('=F') || val.endsWith('=F');
 
     const newStock = {
-        group: '📊 自選',
-        code: cleanCode,
-        yahoo: val.includes('.') || val.includes('=') ? val : val + '.TW',
+        group:   '📊 自選',
+        code:    cleanCode,
+        yahoo:   val.includes('.') || val.includes('=') || val.startsWith('^') ? val : val + '.TW',
         highest: 0,
-        low: '',
+        low:     '',
         current: '',
-        dp: (val.includes('=') || val.includes('F')) ? 4 : 2
+        dp:      (isForex || isFutures) ? 4 : 2,
     };
 
     stocks.push(newStock);
-    localStorage.setItem('stockDataV4', JSON.stringify(stocks));
-
+    try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
     render();
     fetchOne(stocks.length - 1);
     input.value = '';
 }
 
 // ═══════════════════════════════════════════
-// 渲染
+// 渲染卡片
 // ═══════════════════════════════════════════
 function render() {
     const cont = document.getElementById('cards-container');
@@ -672,9 +636,9 @@ function render() {
     stocks.forEach((s, i) => {
         if (s.group !== lastGroup) {
             lastGroup = s.group;
-            cont.insertAdjacentHTML('beforeend',`<div class="group-header">${s.group}</div>`);
+            cont.insertAdjacentHTML('beforeend', `<div class="group-header">${s.group}</div>`);
         }
-        cont.insertAdjacentHTML('beforeend',`
+        cont.insertAdjacentHTML('beforeend', `
         <div class="card" id="card-${i}">
             <div class="card-top">
                 <div class="stock-info">
@@ -737,7 +701,7 @@ function render() {
 
 // ── 啟動 ──
 render();
-refreshStatus();   // 立即顯示正確狀態
+refreshStatus();
 fetchAll();
 </script>
 </body>
