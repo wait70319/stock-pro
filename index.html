@@ -290,7 +290,7 @@ const DEFAULT = [
 let stocks = [];
 try {
     const saved = JSON.parse(localStorage.getItem('stockDataV4') || '[]');
-    if (saved.length > 0 && saved[0].group) {
+    if (saved.length > 0 && saved.group) {
         stocks = saved;
     } else {
         stocks = DEFAULT.map((def, i) => {
@@ -352,8 +352,6 @@ function refreshStatus() {
 
 // ═══════════════════════════════════════════
 // 抓取單支股票
-// 關鍵修正：每支股票從不同 proxy 起點開始，
-// 避免多支同時打爆同一個 proxy
 // ═══════════════════════════════════════════
 async function fetchOne(i) {
     const sym = stocks[i].yahoo;
@@ -375,14 +373,13 @@ async function fetchOne(i) {
     // 解析不同 endpoint 的回傳格式
     function parseYahooResponse(json, endpoint) {
         if (endpoint.includes('/v8/finance/chart')) {
-            const r = json?.chart?.result?.[0];
+            const r = json?.chart?.result?.;
             if (!r) return null;
             return { chartResult: r };
         }
         if (endpoint.includes('/v7/finance/quote')) {
-            const q = json?.quoteResponse?.result?.[0];
+            const q = json?.quoteResponse?.result?.;
             if (!q) return null;
-            // 組成類似 chart result 的格式
             return { quoteResult: q };
         }
         return null;
@@ -453,7 +450,22 @@ async function fetchOne(i) {
     }
 
     if (!result) {
-        // 全失敗 → 保留上次成功的價格，標示警告
+        // 【新增的 Fallback 機制】：如果是 .TW 且抓取失敗，自動改為 .TWO 重試
+        if (stocks[i].yahoo.endsWith('.TW')) {
+            stocks[i].yahoo = stocks[i].yahoo.replace('.TW', '.TWO');
+            
+            // 同步更新網頁 UI 上的代碼輸入框
+            const symInput = document.getElementById(`inp-sym-${i}`);
+            if (symInput) symInput.value = stocks[i].yahoo;
+            
+            // 將變更存回 localStorage，下次就會直接記住 .TWO
+            try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
+            
+            // 重新呼叫自己，進行第二次抓取
+            return fetchOne(i);
+        }
+
+        // 全失敗或 Fallback 也失敗 → 保留上次成功的價格，標示警告
         const savedPrice = stocks[i].current;
         if (savedPrice) {
             const fd = stocks[i].dp ?? 2;
@@ -465,7 +477,7 @@ async function fetchOne(i) {
             pEl.textContent = '連線失敗';
             pEl.className = 'current-price error-text';
             const tEl = document.getElementById(`time-${i}`);
-            if (tEl) tEl.textContent = '所有 Proxy 失敗';
+            if (tEl) tEl.textContent = '所有 Proxy 失敗或查無代碼';
         }
         return;
     }
@@ -513,7 +525,7 @@ async function fetchOne(i) {
 
     // 走勢圖
     const allTs  = result.timestamp || [];
-    const closes = result.indicators?.quote?.[0]?.close || [];
+    const closes = result.indicators?.quote?.?.close || [];
     const dTs = [], dPs = [];
     if (allTs.length) {
         const todayStr = new Date(allTs[allTs.length-1]*1000).toDateString();
@@ -631,7 +643,7 @@ function calculateAll(i) {
     }
 
     if (high > 0) {
-        [5,10,15,20,25,30].forEach(p => {
+       .forEach(p => {
             const target = high * (1 - p/100);
             const el     = document.getElementById(`dp-${p}-${i}`);
             const hit    = !isNaN(cur) && cur <= target;
@@ -639,7 +651,7 @@ function calculateAll(i) {
             el.closest('.grid-item').classList.toggle('hit', hit);
         });
         const range = high - low;
-        [236,382,500,618].forEach(f =>
+       .forEach(f =>
             document.getElementById(`fib-${f}-${i}`).textContent = (high - range*(f/1000)).toFixed(fd));
     }
 }
@@ -670,23 +682,13 @@ function deleteStock(i) {
 }
 
 // ═══════════════════════════════════════════
-// 新增股票
+// 新增股票 (簡化版：預設先加 .TW)
 // ═══════════════════════════════════════════
-// 已知上櫃 ETF 代號集合
-const OTC_ETF = new Set([
-    '00940','00941','00942','00943','00944','00945','00946','00947','00948',
-    '00950','00951','00952','00953','00954','00955','00956','00957','00958',
-    '00959','00960','00961','00962','00963','00964','00965','00966','00967',
-    '00968','00969','00970','00971','00972','00973','00974','00975','00976',
-    '00977','00978','00979','00980','00981','00982','00983','00984','00985',
-    '009805','00949','006201','006205','006206','006207','006208',
-]);
-
 function guessYahooCode(raw) {
     const v = raw.trim().toUpperCase();
     if (v.includes('.') || v.includes('=') || v.startsWith('^')) return v;
     const code = v.replace(/[^A-Z0-9]/g, '');
-    return OTC_ETF.has(code) ? code + '.TWO' : code + '.TW';
+    return code + '.TW'; // 一律預設為 .TW，若失敗會在 fetchOne 裡自動轉 .TWO
 }
 
 function addNewStock() {
