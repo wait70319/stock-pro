@@ -364,34 +364,92 @@ async function fetchOne(i) {
         return;
     }
 
-    // Yahoo host 輪換（2個主機交替）
-    const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
-    const host  = hosts[i % 2];
-    const url   = `https://${host}/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`;
+    // 建立多個 endpoint（v8 chart + v7 quoteSummary 雙路）
+    const endpoints = [
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`,
+        `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`,
+        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}&_=${Date.now()}`,
+        `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}&_=${Date.now()}`,
+    ];
 
-    // 並行試所有 proxy，取最快成功的那個（Promise.any）
-    // 這樣不管哪個 proxy 被 rate limit，只要有一個成功就夠
+    // 解析不同 endpoint 的回傳格式
+    function parseYahooResponse(json, endpoint) {
+        if (endpoint.includes('/v8/finance/chart')) {
+            const r = json?.chart?.result?.[0];
+            if (!r) return null;
+            return { chartResult: r };
+        }
+        if (endpoint.includes('/v7/finance/quote')) {
+            const q = json?.quoteResponse?.result?.[0];
+            if (!q) return null;
+            // 組成類似 chart result 的格式
+            return { quoteResult: q };
+        }
+        return null;
+    }
+
+    // 所有 proxy × 所有 endpoint 的組合全部並行賽跑
     let result = null;
-    try {
-        const winner = await Promise.any(
-            PROXIES.map(async (p, idx) => {
-                // 每個 proxy 加上輕微隨機延遲，避免同時衝擊同一後端
-                await sleep(idx * 80);
+    let quoteResult = null;
+    const tasks = [];
+    PROXIES.forEach((p, pidx) => {
+        endpoints.forEach((ep, eidx) => {
+            tasks.push((async () => {
+                await sleep((pidx * endpoints.length + eidx) * 50); // 錯開 50ms
                 const ctrl = new AbortController();
-                const tid  = setTimeout(() => ctrl.abort(), 6000);
-                const res  = await fetch(p.fn(url), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
+                const tid  = setTimeout(() => ctrl.abort(), 7000);
+                const res  = await fetch(p.fn(ep), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
                 clearTimeout(tid);
                 if (res.status === 429 || !res.ok) throw new Error('fail');
                 let json = await res.json();
                 if (p.wrap && json.contents) json = JSON.parse(json.contents);
-                if (!json?.chart?.result?.[0]) throw new Error('no data');
-                document.getElementById('proxyStatus').textContent = `P${idx+1}✓`;
-                return json.chart.result[0];
-            })
-        );
-        result = winner;
+                const parsed = parseYahooResponse(json, ep);
+                if (!parsed) throw new Error('no data');
+                document.getElementById('proxyStatus').textContent = `P${pidx+1}/E${eidx+1}✓`;
+                return parsed;
+            })());
+        });
+    });
+
+    try {
+        const winner = await Promise.any(tasks);
+        if (winner.chartResult) result = winner.chartResult;
+        else if (winner.quoteResult) quoteResult = winner.quoteResult;
     } catch(e) {
-        result = null;
+        result = null; quoteResult = null;
+    }
+
+    // v7 quoteResult 路徑（無走勢圖，但有即時價格）
+    if (!result && quoteResult) {
+        const q    = quoteResult;
+        const price = q.regularMarketPrice;
+        const prev  = q.regularMarketPreviousClose;
+        if (price) {
+            const fd   = stocks[i].dp ?? 2;
+            const diff = price - prev;
+            const pct  = (diff / prev) * 100;
+            const cc   = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
+            stocks[i].current = price;
+            document.getElementById(`inp-cur-${i}`).value = price;
+            const pEl = document.getElementById(`price-${i}`);
+            pEl.className   = `current-price ${cc}`;
+            pEl.textContent = price.toFixed(fd);
+            const cEl   = document.getElementById(`chg-${i}`);
+            const arrow = diff>0?'▲':diff<0?'▼':'';
+            cEl.textContent = `${arrow} ${Math.abs(diff).toFixed(fd)} (${pct>0?'+':''}${pct.toFixed(2)}%)`;
+            cEl.className   = `price-change ${cc}`;
+            const card = pEl.closest('.card');
+            card.classList.toggle('up-card', diff>0);
+            card.classList.toggle('down-card', diff<0);
+            if (q.regularMarketVolume) {
+                const vEl = document.getElementById(`vol-${i}`);
+                if (vEl) vEl.textContent = Number(q.regularMarketVolume).toLocaleString();
+            }
+            const tEl = document.getElementById(`time-${i}`);
+            if (tEl) { tEl.textContent = '⚡ v7 即時'; tEl.className = 'data-time'; }
+            calculateAll(i);
+            return;
+        }
     }
 
     if (!result) {
@@ -614,27 +672,40 @@ function deleteStock(i) {
 // ═══════════════════════════════════════════
 // 新增股票
 // ═══════════════════════════════════════════
+// 已知上櫃 ETF 代號集合
+const OTC_ETF = new Set([
+    '00940','00941','00942','00943','00944','00945','00946','00947','00948',
+    '00950','00951','00952','00953','00954','00955','00956','00957','00958',
+    '00959','00960','00961','00962','00963','00964','00965','00966','00967',
+    '00968','00969','00970','00971','00972','00973','00974','00975','00976',
+    '00977','00978','00979','00980','00981','00982','00983','00984','00985',
+    '009805','00949','006201','006205','006206','006207','006208',
+]);
+
+function guessYahooCode(raw) {
+    const v = raw.trim().toUpperCase();
+    if (v.includes('.') || v.includes('=') || v.startsWith('^')) return v;
+    const code = v.replace(/[^A-Z0-9]/g, '');
+    return OTC_ETF.has(code) ? code + '.TWO' : code + '.TW';
+}
+
 function addNewStock() {
     const input = document.getElementById('newCode');
-    let val = input.value.trim().toUpperCase();
-    if (!val) return;
+    const raw   = input.value.trim();
+    if (!raw) return;
 
-    let cleanCode = val;
-    if (cleanCode.endsWith('.TW'))       cleanCode = cleanCode.slice(0, -3);
-    else if (cleanCode.includes('='))    cleanCode = cleanCode.split('=')[0];
-    else if (cleanCode.includes('.TWO')) cleanCode = cleanCode.slice(0, -4);
-
-    const isForex   = val.includes('=X');
-    const isFutures = val.includes('=F') || val.endsWith('=F');
+    const yahooCode = guessYahooCode(raw);
+    const isForex   = yahooCode.includes('=X');
+    const isFutures = yahooCode.includes('=F');
+    const cleanCode = raw.toUpperCase()
+        .replace(/\.TWO$/i,'').replace(/\.TW$/i,'').replace(/=.*/,'');
 
     const newStock = {
         group:   '📊 自選',
         code:    cleanCode,
-        yahoo:   val.includes('.') || val.includes('=') || val.startsWith('^') ? val : val + '.TW',
-        highest: 0,
-        low:     '',
-        current: '',
-        dp:      (isForex || isFutures) ? 4 : 2,
+        yahoo:   yahooCode,
+        highest: 0, low: '', current: '',
+        dp: (isForex || isFutures) ? 4 : 2,
     };
 
     stocks.push(newStock);
