@@ -380,12 +380,12 @@ async function fetchOne(i) {
         const p   = PROXIES[idx];
         try {
             const ctrl = new AbortController();
-            const tid  = setTimeout(() => ctrl.abort(), 8000);
+            const tid  = setTimeout(() => ctrl.abort(), 6000);
             const res  = await fetch(p.fn(url), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
             clearTimeout(tid);
             if (res.status === 429) {
                 // rate limit：等待後換下一個 proxy
-                await sleep(800 + Math.random() * 400);
+                await sleep(300 + Math.random() * 200);
                 continue;
             }
             if (!res.ok) continue;
@@ -484,17 +484,9 @@ async function fetchAll() {
     const btn = document.getElementById('updateBtn');
     btn.disabled = true;
 
-    // 分批並行：每批 3 支同時抓，批次間隔 700ms
-    // 大幅縮短等待時間（8支原本需 4s，現在約 1.5-2s）
-    const BATCH = 3;
-    for (let start = 0; start < stocks.length; start += BATCH) {
-        const end   = Math.min(start + BATCH, stocks.length);
-        const batch = [];
-        for (let i = start; i < end; i++) batch.push(i);
-        btn.textContent = `同步中… (${end}/${stocks.length})`;
-        await Promise.all(batch.map(i => fetchOne(i)));
-        if (end < stocks.length) await sleep(700);
-    }
+    // 全部同時並行，各自用不同 proxy 起點
+    btn.textContent = '同步中…';
+    await Promise.all(stocks.map((_, i) => fetchOne(i)));
 
     try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
 
