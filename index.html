@@ -362,7 +362,6 @@ async function fetchOne(i) {
         return;
     }
 
-    // 建立多個 endpoint（v8 chart + v7 quoteSummary 雙路）
     const endpoints = [
         `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`,
         `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`,
@@ -370,7 +369,6 @@ async function fetchOne(i) {
         `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}&_=${Date.now()}`,
     ];
 
-    // 解析不同 endpoint 的回傳格式
     function parseYahooResponse(json, endpoint) {
         if (endpoint.includes('/v8/finance/chart')) {
             const r = json?.chart?.result?.;
@@ -385,14 +383,13 @@ async function fetchOne(i) {
         return null;
     }
 
-    // 所有 proxy × 所有 endpoint 的組合全部並行賽跑
     let result = null;
     let quoteResult = null;
     const tasks = [];
     PROXIES.forEach((p, pidx) => {
         endpoints.forEach((ep, eidx) => {
             tasks.push((async () => {
-                await sleep((pidx * endpoints.length + eidx) * 50); // 錯開 50ms
+                await sleep((pidx * endpoints.length + eidx) * 50);
                 const ctrl = new AbortController();
                 const tid  = setTimeout(() => ctrl.abort(), 7000);
                 const res  = await fetch(p.fn(ep), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
@@ -416,7 +413,6 @@ async function fetchOne(i) {
         result = null; quoteResult = null;
     }
 
-    // v7 quoteResult 路徑（無走勢圖，但有即時價格）
     if (!result && quoteResult) {
         const q    = quoteResult;
         const price = q.regularMarketPrice;
@@ -450,22 +446,14 @@ async function fetchOne(i) {
     }
 
     if (!result) {
-        // 【新增的 Fallback 機制】：如果是 .TW 且抓取失敗，自動改為 .TWO 重試
         if (stocks[i].yahoo.endsWith('.TW')) {
             stocks[i].yahoo = stocks[i].yahoo.replace('.TW', '.TWO');
-            
-            // 同步更新網頁 UI 上的代碼輸入框
             const symInput = document.getElementById(`inp-sym-${i}`);
             if (symInput) symInput.value = stocks[i].yahoo;
-            
-            // 將變更存回 localStorage，下次就會直接記住 .TWO
             try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
-            
-            // 重新呼叫自己，進行第二次抓取
             return fetchOne(i);
         }
 
-        // 全失敗或 Fallback 也失敗 → 保留上次成功的價格，標示警告
         const savedPrice = stocks[i].current;
         if (savedPrice) {
             const fd = stocks[i].dp ?? 2;
@@ -523,7 +511,6 @@ async function fetchOne(i) {
         }
     }
 
-    // 走勢圖
     const allTs  = result.timestamp || [];
     const closes = result.indicators?.quote?.?.close || [];
     const dTs = [], dPs = [];
@@ -550,7 +537,6 @@ async function fetchAll() {
     const btn = document.getElementById('updateBtn');
     btn.disabled = true;
 
-    // 全部同時並行，各自用不同 proxy 起點
     btn.textContent = '同步中…';
     await Promise.all(stocks.map((_, i) => fetchOne(i)));
 
@@ -673,22 +659,20 @@ function onYahooChange(i) {
 // ═══════════════════════════════════════════
 function deleteStock(i) {
     if (!confirm(`確定刪除「${stocks[i].code}」？`)) return;
-    // 銷毀走勢圖 instance
     if (chartInst[i]) { chartInst[i].destroy(); chartInst[i] = null; }
     stocks.splice(i, 1);
     try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
     render();
-    // 重新 fetch 剩餘（保留已有價格，只 fetch 無資料的）
 }
 
 // ═══════════════════════════════════════════
-// 新增股票 (簡化版：預設先加 .TW)
+// 新增股票 (預設先加 .TW)
 // ═══════════════════════════════════════════
 function guessYahooCode(raw) {
     const v = raw.trim().toUpperCase();
     if (v.includes('.') || v.includes('=') || v.startsWith('^')) return v;
     const code = v.replace(/[^A-Z0-9]/g, '');
-    return code + '.TW'; // 一律預設為 .TW，若失敗會在 fetchOne 裡自動轉 .TWO
+    return code + '.TW'; 
 }
 
 function addNewStock() {
