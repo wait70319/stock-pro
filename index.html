@@ -369,33 +369,29 @@ async function fetchOne(i) {
     const host  = hosts[i % 2];
     const url   = `https://${host}/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`;
 
-    // ★ 核心修正：每支股票從不同的 proxy 開始嘗試
-    // 第0支從 proxy 0 開始，第1支從 proxy 1 開始，以此類推
-    // 這樣 8 支股票就分散到 6 個 proxy，不會集中打同一個
-    const proxyStart = i % PROXIES.length;
+    // 並行試所有 proxy，取最快成功的那個（Promise.any）
+    // 這樣不管哪個 proxy 被 rate limit，只要有一個成功就夠
     let result = null;
-
-    for (let a = 0; a < PROXIES.length; a++) {
-        const idx = (proxyStart + a) % PROXIES.length;
-        const p   = PROXIES[idx];
-        try {
-            const ctrl = new AbortController();
-            const tid  = setTimeout(() => ctrl.abort(), 6000);
-            const res  = await fetch(p.fn(url), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
-            clearTimeout(tid);
-            if (res.status === 429) {
-                // rate limit：等待後換下一個 proxy
-                await sleep(300 + Math.random() * 200);
-                continue;
-            }
-            if (!res.ok) continue;
-            let json = await res.json();
-            if (p.wrap && json.contents) json = JSON.parse(json.contents);
-            if (!json?.chart?.result?.[0]) continue;
-            result = json.chart.result[0];
-            document.getElementById('proxyStatus').textContent = `P${idx+1}✓`;
-            break;
-        } catch(e) { continue; }
+    try {
+        const winner = await Promise.any(
+            PROXIES.map(async (p, idx) => {
+                // 每個 proxy 加上輕微隨機延遲，避免同時衝擊同一後端
+                await sleep(idx * 80);
+                const ctrl = new AbortController();
+                const tid  = setTimeout(() => ctrl.abort(), 6000);
+                const res  = await fetch(p.fn(url), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
+                clearTimeout(tid);
+                if (res.status === 429 || !res.ok) throw new Error('fail');
+                let json = await res.json();
+                if (p.wrap && json.contents) json = JSON.parse(json.contents);
+                if (!json?.chart?.result?.[0]) throw new Error('no data');
+                document.getElementById('proxyStatus').textContent = `P${idx+1}✓`;
+                return json.chart.result[0];
+            })
+        );
+        result = winner;
+    } catch(e) {
+        result = null;
     }
 
     if (!result) {
