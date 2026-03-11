@@ -1,53 +1,50 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>股市看板</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --bg-root: #080c12;
-            --bg-card: #0e1520;
-            --bg-section: #121c2a;
-            --bg-input: #1a2740;
-            --border: #1f3050;
-            --border-accent: #2a4878;
-            --text-primary: #e8f0fe;
-            --text-secondary:#7a9cc4;
-            --text-muted: #3d5a80;
-            --up: #ff4d6d;
-            --down: #00d68f;
-            --up-bg: rgba(255,77,109,0.12);
-            --down-bg: rgba(0,214,143,0.12);
-            --accent-blue: #4d9fff;
-        }
-        * { box-sizing:border-box; margin:0; padding:0; }
-        body {
-            font-family:'Noto Sans TC',sans-serif;
-            background-color:var(--bg-root);
-            background-image: radial-gradient(ellipse at 20% 0%, rgba(30,60,120,0.25) 0%,transparent 60%), radial-gradient(ellipse at 80% 100%,rgba(10,40,80,0.30) 0%,transparent 60%);
-            color:var(--text-primary);
-            min-height:100vh; padding:28px 16px;
-            display:flex; flex-direction:column; align-items:center;
-        }
-        .container { width:100%; max-width:920px; }
-        .header-section { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding-bottom:18px; border-bottom:1px solid var(--border-accent); }
-        .header-left { display:flex; align-items:center; gap:12px; }
-        .header-icon { width:40px; height:40px; background:linear-gradient(135deg,#1a4a8a,#2a7fff); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 16px rgba(45,127,255,0.35); }
-        h2 { font-size:20px; font-weight:700; letter-spacing:0.02em; }
-        .header-sub { color:var(--text-secondary); font-size:12px; margin-top:2px; }
-        .header-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; width:100%; max-width:420px; }
-        .add-stock-row { display:flex; gap:8px; width:100%; justify-content:flex-end; }
-        .add-stock-row input { background:var(--bg-input); border:1px solid var(--border-accent); color:var(--accent-blue); padding:9px 12px; border-radius:8px; font-family:'JetBrains Mono',monospace; font-size:13px; width:190px; }
-        .add-stock-row button { background:linear-gradient(135deg,#1a5fc8,#2d8fff); color:#fff; border:none; padding:9px 18px; border-radius:8px; cursor:pointer; font-weight:700; font-size:13px; }
-        #statusBar { display:flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-muted); transition:color 0.3s; }
-        .dot { width:7px; height:7px; border-radius:50%; background:var(--text-muted); flex-shrink:0; transition:all 0.3s; }
-        #statusBar.trading { color:#00d68f; }
-        #statusBar.trading .dot { background:#00d68f; box-shadow:0 0 6px #00d68f; animation:pulse 1.5s infinite; }
-        #statusBar.soon { color:var(--accent-blue); }
-        #statusBar.soon .dot { background:var(--accent-blue); }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .btn-update { background:linear-gradient(135deg,#1a5fc8,#2d8fff); color:#fff; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:700; font-family:'Noto Sans TC',sans-serif; letter-spacing:0.03em; transition:all 0.2s; box-shadow:0 4px 16px rgba(45,143,255,0.3); }
-        .btn-update:hover { transform:translateY(-1px); }
+<div class="card" id="card-${i}">
+            <div class="delete-btn" onclick="deleteStock(${i})" title="刪除這檔股票">×</div>
+            <div class="card-top">
+                <div class="stock-info">
+                    <span class="stock-name">${s.code}</span>
+                    <span class="stock-symbol">
+                        <span class="symbol-label">Yahoo</span>
+                        <input type="text" id="inp-sym-\( {i}" value=" \){s.yahoo}" onchange="onYahooChange(${i})">
+                    </span>
+                </div>
+                <div class="price-info">
+                    <div class="current-price loading-text" id="price-${i}">讀取中…</div>
+                    <div class="price-change" id="chg-${i}"></div>
+                    <div class="vol-info">成交量 <span id="vol-${i}">—</span></div>
+                    <div class="data-time" id="time-${i}"></div>
+                </div>
+            </div>
+            <div class="chart-container"><canvas id="chart-${i}"></canvas></div>
+            <div class="calc-inputs">
+                <div class="input-group"><label>目前價格</label><input type="number" id="inp-cur-\( {i}" step="0.0001" value=" \){s.current}" oninput="onInputChange(${i})"></div>
+                <div class="input-group"><label>波段高點</label><input type="number" id="inp-hi-\( {i}" step="0.0001" value=" \){s.highest}" oninput="onInputChange(${i})"></div>
+                <div class="input-group"><label>波段低點</label><input type="number" id="inp-lo-\( {i}" step="0.0001" value=" \){s.low}" oninput="onInputChange(${i})" placeholder="選填"></div>
+                <div class="result-group"><label>距高點差 / 漲跌幅</label><div class="result-val" id="diff-${i}">—</div></div>
+            </div>
+            <div class="grid-section"><div class="grid-title">回檔目標價</div><div class="data-grid">
+                <div class="grid-item drop-5"><div class="item-label">−5%</div><div class="item-value" id="dp-5-${i}">—</div></div>
+                <div class="grid-item drop-10"><div class="item-label">−10%</div><div class="item-value" id="dp-10-${i}">—</div></div>
+                <div class="grid-item drop-15"><div class="item-label">−15%</div><div class="item-value" id="dp-15-${i}">—</div></div>
+                <div class="grid-item drop-20"><div class="item-label">−20%</div><div class="item-value" id="dp-20-${i}">—</div></div>
+                <div class="grid-item drop-25"><div class="item-label">−25%</div><div class="item-value" id="dp-25-${i}">—</div></div>
+                <div class="grid-item drop-30"><div class="item-label">−30%</div><div class="item-value" id="dp-30-${i}">—</div></div>
+            </div></div>
+            <div class="grid-section"><div class="grid-title">斐波那契支撐位</div><div class="data-grid-fib">
+                <div class="grid-item fib-236"><div class="item-label">0.236</div><div class="item-value" id="fib-236-${i}">—</div></div>
+                <div class="grid-item fib-382"><div class="item-label">0.382</div><div class="item-value" id="fib-382-${i}">—</div></div>
+                <div class="grid-item fib-500"><div class="item-label">0.500</div><div class="item-value" id="fib-500-${i}">—</div></div>
+                <div class="grid-item fib-618"><div class="item-label">0.618</div><div class="item-value" id="fib-618-${i}">—</div></div>
+            </div></div>
+        </div>`);
+        calculateAll(i);
+    });
+}
+
+// ── 啟動 ──
+render();
+refreshStatus();
+fetchAll();
+</script>
+</body>
+    </html>
