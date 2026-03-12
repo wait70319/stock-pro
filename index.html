@@ -276,9 +276,7 @@
 <script>
 // ═══════════════════════════════════════════
 // ⚙️  設定你的 Cloudflare Worker URL
-// 部署 worker.js 後，把 URL 貼在這裡
-// 例如：'https://yahoo-proxy.your-name.workers.dev'
-// 留空 '' 則略過 Worker，直接用備用 Proxy
+// ✅ 已經為您更新為專屬網址
 // ═══════════════════════════════════════════
 var WORKER_URL = 'https://solitary-star-284f.wait70319.workers.dev';
 
@@ -784,13 +782,20 @@ function render() {
 
 // ═══════════════════════════════════════════
 // fetchAll & 自動更新
+// ✅ 改為依序排隊抓取（間隔 200 毫秒），解決塞車問題
 // ═══════════════════════════════════════════
 async function fetchAll() {
     if (isFetching) return;
     isFetching = true;
     var btn = document.getElementById('updateBtn');
     if (btn) { btn.disabled = true; btn.textContent = '同步中…'; }
-    await Promise.all(stocks.map(function(_, i) { return fetchOne(i); }));
+
+    // 依序抓取，每抓完一檔休息 200 毫秒
+    for (let i = 0; i < stocks.length; i++) {
+        await fetchOne(i);
+        await new Promise(resolve => setTimeout(resolve, 200)); 
+    }
+
     try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
     if (btn) btn.textContent = '✅ 同步完成';
     refreshStatus();
