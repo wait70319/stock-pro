@@ -272,7 +272,6 @@
     </div>
 </div>
 
-
 <script>
 // ═══════════════════════════════════════════
 // ⚙️  設定你的 Cloudflare Worker URL
@@ -334,6 +333,7 @@ try {
 // ═══════════════════════════════════════════
 // Proxy 建構器
 // Worker 優先；Worker 未設定時用備用 proxy
+// ✅ 關鍵修改：只要有設定 Worker，就強制提早返回，不加載失效的備用代理
 // ═══════════════════════════════════════════
 function buildProxies() {
     var list = [];
@@ -342,15 +342,15 @@ function buildProxies() {
     if (WORKER_URL) {
         var w = WORKER_URL.replace(/\/$/, '');
         list.push({ fn: function(u) { return w + '/?url=' + encodeURIComponent(u); }, wrap: false, name: 'CF-Worker' });
+        
+        // 強制只用 Worker，不再浪費時間去測試失效的代理
+        return list;
     }
 
-    // 2. 備用免費 Proxy（不需設定，但可能受限）
+    // 2. 如果沒設定 Worker，才去用這些備用的免費 Proxy (目前大多已失效)
     list.push({ fn: function(u) { return 'https://api.allorigins.win/raw?url='           + encodeURIComponent(u); }, wrap: false, name: 'allorigins-raw' });
     list.push({ fn: function(u) { return 'https://corsproxy.io/?'                        + encodeURIComponent(u); }, wrap: false, name: 'corsproxy.io'   });
     list.push({ fn: function(u) { return 'https://corsproxy.org/?'                       + encodeURIComponent(u); }, wrap: false, name: 'corsproxy.org'  });
-    list.push({ fn: function(u) { return 'https://api.allorigins.win/get?url='           + encodeURIComponent(u); }, wrap: true,  name: 'allorigins-get' });
-    list.push({ fn: function(u) { return 'https://api.codetabs.com/v1/proxy/?quest='     + encodeURIComponent(u); }, wrap: false, name: 'codetabs'       });
-    list.push({ fn: function(u) { return 'https://thingproxy.freeboard.io/fetch/'        + encodeURIComponent(u); }, wrap: false, name: 'thingproxy'     });
     return list;
 }
 var PROXIES = buildProxies();
