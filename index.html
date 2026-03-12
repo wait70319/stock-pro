@@ -3,446 +3,779 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>股市看板 (閃電抓取版)</title>
+    <title>股市看板</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        :root {
+            --bg-root: #080c12;
+            --bg-card: #0e1520;
+            --bg-section: #121c2a;
+            --bg-input: #1a2740;
+            --bg-grid: #162036;
+            --border: #1f3050;
+            --border-accent: #2a4878;
+            --text-primary: #e8f0fe;
+            --text-secondary:#7a9cc4;
+            --text-muted: #3d5a80;
+            --up: #ff4d6d;
+            --down: #00d68f;
+            --up-bg: rgba(255,77,109,0.12);
+            --down-bg: rgba(0,214,143,0.12);
+            --accent-blue: #4d9fff;
+        }
+        * { box-sizing:border-box; margin:0; padding:0; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", Roboto, sans-serif;
-            background-color: #0f0f11; color: #e0e0e0; margin: 0; padding: 20px 10px;
-            display: flex; flex-direction: column; align-items: center;
+            font-family:'Noto Sans TC',sans-serif;
+            background-color:var(--bg-root);
+            background-image:
+                radial-gradient(ellipse at 20% 0%, rgba(30,60,120,0.25) 0%,transparent 60%),
+                radial-gradient(ellipse at 80% 100%,rgba(10,40,80,0.30) 0%,transparent 60%);
+            color:var(--text-primary);
+            min-height:100vh; padding:28px 16px;
+            display:flex; flex-direction:column; align-items:center;
         }
-        .container { width: 100%; max-width: 900px; }
+        .container { width:100%; max-width:920px; }
+        /* ── Header ── */
         .header-section {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;
+            display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:28px; padding-bottom:18px;
+            border-bottom:1px solid var(--border-accent);
         }
-        h2 { color: #fff; margin: 0; font-size: 20px; font-weight: 500; }
+        .header-left { display:flex; align-items:center; gap:12px; }
+        .header-icon {
+            width:40px; height:40px;
+            background:linear-gradient(135deg,#1a4a8a,#2a7fff);
+            border-radius:10px; display:flex; align-items:center; justify-content:center;
+            font-size:20px; box-shadow:0 4px 16px rgba(45,127,255,0.35);
+        }
+        h2 { font-size:20px; font-weight:700; letter-spacing:0.02em; }
+        .header-sub { color:var(--text-secondary); font-size:12px; margin-top:2px; }
+        .header-right {
+            display:flex; flex-direction:column; align-items:flex-end; gap:8px;
+            width:100%; max-width:420px;
+        }
+        /* ── 新增股票 ── */
+        .add-stock-row {
+            display:flex; gap:8px; width:100%; justify-content:flex-end;
+        }
+        .add-stock-row input {
+            background:var(--bg-input); border:1px solid var(--border-accent);
+            color:var(--accent-blue); padding:9px 12px; border-radius:8px;
+            font-family:'JetBrains Mono',monospace; font-size:13px; width:190px;
+        }
+        .add-stock-row button {
+            background:linear-gradient(135deg,#1a5fc8,#2d8fff);
+            color:#fff; border:none; padding:9px 18px; border-radius:8px;
+            cursor:pointer; font-weight:700; font-size:13px;
+        }
+        /* ── 狀態列 ── */
+        #statusBar {
+            display:flex; align-items:center; gap:6px;
+            font-family:'JetBrains Mono',monospace; font-size:11px;
+            color:var(--text-muted); transition:color 0.3s;
+        }
+        .dot {
+            width:7px; height:7px; border-radius:50%;
+            background:var(--text-muted); flex-shrink:0; transition:all 0.3s;
+        }
+        #statusBar.trading { color:#00d68f; }
+        #statusBar.trading .dot { background:#00d68f; box-shadow:0 0 6px #00d68f; animation:pulse 1.5s infinite; }
+        #statusBar.soon { color:var(--accent-blue); }
+        #statusBar.soon .dot { background:var(--accent-blue); }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         .btn-update {
-            background-color: #1a73e8; color: white; border: none;
-            padding: 8px 16px; border-radius: 6px; cursor: pointer;
-            font-size: 14px; font-weight: bold; transition: 0.2s;
+            background:linear-gradient(135deg,#1a5fc8,#2d8fff);
+            color:#fff; border:none; padding:10px 20px; border-radius:8px;
+            cursor:pointer; font-size:14px; font-weight:700;
+            font-family:'Noto Sans TC',sans-serif; letter-spacing:0.03em;
+            transition:all 0.2s; box-shadow:0 4px 16px rgba(45,143,255,0.3);
         }
-        .btn-update:hover { background-color: #1557b0; }
-        .btn-update:disabled { background-color: #555; color: #888; cursor: not-allowed; }
-
+        .btn-update:hover { transform:translateY(-1px); }
+        .btn-update:disabled { background:#1a2740; color:var(--text-muted); cursor:not-allowed; box-shadow:none; transform:none; }
+        /* ── 刪除按鈕 ── */
+        .btn-delete {
+            position:absolute; top:10px; right:10px;
+            background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4);
+            color:#f87171; border-radius:6px; width:26px; height:26px;
+            cursor:pointer; font-size:14px; line-height:1;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.2s; opacity:0;
+        }
+        .card:hover .btn-delete { opacity:1; }
+        .btn-delete:hover { background:rgba(239,68,68,0.35); color:#fff; }
+        /* ── 分類標題 ── */
+        .group-header {
+            font-size:11px; font-weight:700; letter-spacing:0.14em;
+            text-transform:uppercase; color:var(--text-secondary);
+            margin:20px 0 10px; padding:5px 0 5px 10px;
+            border-left:3px solid var(--border-accent);
+        }
+        .group-header:first-child { margin-top:0; }
+        /* ── Card ── */
         .card {
-            background-color: #1c1c1e; border-radius: 10px; border: 1px solid #2c2c2e;
-            margin-bottom: 20px; overflow: hidden; display: flex; flex-direction: column;
+            background:var(--bg-card); border-radius:14px;
+            border:1px solid var(--border-accent); border-left:4px solid var(--border-accent);
+            margin-bottom:14px; overflow:hidden; position:relative;
+            box-shadow:0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+            transition:border-left-color 0.35s;
         }
-        .card-top { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px 20px; }
-        .stock-info { display: flex; flex-direction: column; gap: 4px; }
-        .stock-name { font-size: 18px; font-weight: bold; color: #fff; }
-        .stock-symbol { font-size: 12px; color: #8e8e93; display: flex; align-items: center; gap: 5px;}
+        .card.up-card { border-left-color:var(--up); }
+        .card.down-card { border-left-color:var(--down); }
+        /* ── Card Top ── */
+        .card-top {
+            display:flex; justify-content:space-between; align-items:center;
+            padding:18px 20px 14px;
+            background:linear-gradient(180deg,rgba(30,60,100,0.3) 0%,transparent 100%);
+            border-bottom:1px solid var(--border);
+        }
+        .stock-info { display:flex; flex-direction:column; gap:5px; }
+        .stock-name { font-size:20px; font-weight:900; letter-spacing:0.04em; }
+        .stock-symbol { display:flex; align-items:center; gap:8px; }
+        .symbol-label {
+            background:var(--bg-input); border:1px solid var(--border-accent);
+            border-radius:4px; padding:2px 7px; font-size:10px; color:var(--text-secondary);
+        }
         .stock-symbol input {
-            background: #2c2c2e; border: 1px solid #444; color: #8e8e93; 
-            font-size: 11px; padding: 2px 5px; border-radius: 4px; width: 80px;
+            background:var(--bg-input); border:1px solid var(--border-accent);
+            color:var(--accent-blue); font-size:12px;
+            font-family:'JetBrains Mono',monospace;
+            padding:3px 8px; border-radius:5px; width:120px;
         }
-        
-        .price-info { text-align: right; }
-        .current-price { font-size: 24px; font-weight: bold; transition: color 0.3s; }
-        .price-change { font-size: 14px; margin-top: 2px; }
-        .vol-info { font-size: 11px; color: #8e8e93; margin-top: 4px; }
-        
-        .error-text { color: #f39c12 !important; font-size: 16px !important; }
-        .loading-text { color: #8e8e93 !important; font-size: 14px !important; }
-
-        .chart-container { width: 100%; height: 120px; position: relative; padding: 0 10px; box-sizing: border-box; }
-
+        .stock-symbol input:focus { outline:none; border-color:var(--accent-blue); }
+        /* ── Price ── */
+        .price-info { text-align:right; }
+        .current-price {
+            font-family:'JetBrains Mono',monospace;
+            font-size:28px; font-weight:700; letter-spacing:-0.02em; line-height:1;
+        }
+        .current-price.up { color:var(--up); }
+        .current-price.down { color:var(--down); }
+        .price-change {
+            font-family:'JetBrains Mono',monospace;
+            font-size:13px; margin-top:5px; padding:3px 9px;
+            border-radius:6px; display:inline-block; font-weight:600;
+        }
+        .price-change.up { background:var(--up-bg); color:var(--up); }
+        .price-change.down { background:var(--down-bg); color:var(--down); }
+        .vol-info { font-size:11px; color:var(--text-muted); margin-top:5px; }
+        .vol-info span { color:var(--text-secondary); }
+        .data-time { font-size:10px; color:var(--text-muted); margin-top:3px; font-family:'JetBrains Mono',monospace; }
+        .data-time.stale { color:#e07b00; }
+        .error-text { color:#ff9000 !important; font-size:14px !important; }
+        .loading-text { color:var(--text-muted) !important; font-size:14px !important; }
+        /* ── Chart ── */
+        .chart-container { width:100%; height:100px; background:rgba(8,18,30,0.5); }
+        .chart-container canvas { display:block; }
+        /* ── Inputs ── */
         .calc-inputs {
-            display: flex; flex-wrap: wrap; gap: 15px; padding: 15px 20px;
-            background-color: #151516; border-top: 1px solid #2c2c2e; border-bottom: 1px solid #2c2c2e;
+            display:flex; flex-wrap:wrap; gap:14px; padding:16px 20px;
+            background:var(--bg-section);
+            border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+            align-items:flex-end;
         }
-        .input-group { display: flex; flex-direction: column; gap: 5px; }
-        .input-group label { font-size: 12px; color: #8e8e93; }
+        .input-group { display:flex; flex-direction:column; gap:5px; }
+        .input-group label { font-size:10px; color:var(--text-secondary); font-weight:600; letter-spacing:0.07em; text-transform:uppercase; }
         .input-group input {
-            background-color: #2c2c2e; border: 1px solid #444; color: #fff;
-            padding: 6px 10px; border-radius: 6px; font-size: 14px; width: 90px; text-align: center;
+            background:var(--bg-input); border:1px solid var(--border-accent);
+            color:var(--text-primary); padding:7px 10px; border-radius:7px;
+            font-size:14px; font-family:'JetBrains Mono',monospace;
+            width:105px; text-align:center; font-weight:600;
         }
-        .input-group input:focus { outline: none; border-color: #1a73e8; }
-        
-        .result-group { display: flex; flex-direction: column; gap: 5px; margin-left: auto; text-align: right; }
-        .result-group label { font-size: 12px; color: #8e8e93; }
-        .result-val { font-size: 18px; font-weight: bold; }
-
-        .grid-section { padding: 15px 20px; }
-        .grid-title { font-size: 13px; color: #8e8e93; margin-bottom: 10px; font-weight: bold; }
-        .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; }
-        .grid-item { background-color: #2c2c2e; border-radius: 6px; padding: 8px 5px; text-align: center; }
-        .item-label { font-size: 11px; color: #8e8e93; margin-bottom: 4px; }
-        .item-value { font-size: 13px; font-weight: bold; color: #fff; }
-
-        .up { color: #ff4a4a !important; }
-        .down { color: #00e676 !important; }
-        .drop-val { color: #64b5f6; }
-        .fib-val { color: #ffb74d; }
-        .note { font-size: 12px; color: #8e8e93; line-height: 1.5; margin-top: 10px; }
-        .proxy-status { font-size: 11px; color: #555; margin-top: 4px; }
-        
-        @media (max-width: 600px) {
-            .data-grid { grid-template-columns: repeat(3, 1fr); }
-            .calc-inputs { gap: 10px; }
-            .input-group input { width: 75px; }
+        .input-group input:focus { outline:none; border-color:var(--accent-blue); box-shadow:0 0 0 3px rgba(77,159,255,0.15); }
+        .input-group input::placeholder { color:var(--text-muted); }
+        .result-group { display:flex; flex-direction:column; gap:5px; margin-left:auto; text-align:right; }
+        .result-group label { font-size:10px; color:var(--text-secondary); font-weight:600; letter-spacing:0.07em; text-transform:uppercase; }
+        .result-val { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; }
+        .up { color:var(--up) !important; }
+        .down { color:var(--down) !important; }
+        /* ── Grid ── */
+        .grid-section { padding:14px 20px; }
+        .grid-section + .grid-section { padding-top:4px; }
+        .grid-title {
+            font-size:10px; color:var(--text-secondary); font-weight:700;
+            letter-spacing:0.1em; text-transform:uppercase; margin-bottom:10px;
+            display:flex; align-items:center; gap:8px;
+        }
+        .grid-title::after { content:''; flex:1; height:1px; background:var(--border); }
+        .data-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:7px; }
+        .data-grid-fib { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+        .grid-item { border-radius:8px; padding:9px 5px; text-align:center; transition:transform 0.15s; }
+        .grid-item:hover { transform:translateY(-1px); }
+        .item-label { font-size:10px; margin-bottom:4px; font-family:'JetBrains Mono',monospace; }
+        .item-value { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; }
+        .grid-item.drop-5  { background:rgba(56,189,248,.10);  border:1px solid rgba(56,189,248,.45);  border-left:3px solid #38bdf8; }
+        .grid-item.drop-5  .item-label{color:#7dd3fc} .grid-item.drop-5  .item-value{color:#38bdf8}
+        .grid-item.drop-10 { background:rgba(99,210,160,.10);  border:1px solid rgba(99,210,160,.45);  border-left:3px solid #63d2a0; }
+        .grid-item.drop-10 .item-label{color:#9de8c4} .grid-item.drop-10 .item-value{color:#63d2a0}
+        .grid-item.drop-15 { background:rgba(250,204,21,.10);  border:1px solid rgba(250,204,21,.45);  border-left:3px solid #facc15; }
+        .grid-item.drop-15 .item-label{color:#fde68a} .grid-item.drop-15 .item-value{color:#facc15}
+        .grid-item.drop-20 { background:rgba(251,146,60,.12);  border:1px solid rgba(251,146,60,.50);  border-left:3px solid #fb923c; }
+        .grid-item.drop-20 .item-label{color:#fdba74} .grid-item.drop-20 .item-value{color:#fb923c}
+        .grid-item.drop-25 { background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.50); border-left:3px solid #f87171; }
+        .grid-item.drop-25 .item-label{color:#fca5a5} .grid-item.drop-25 .item-value{color:#f87171}
+        .grid-item.drop-30 { background:rgba(239,68,68,.16);   border:1px solid rgba(239,68,68,.60);   border-left:3px solid #ef4444; }
+        .grid-item.drop-30 .item-label{color:#fca5a5} .grid-item.drop-30 .item-value{color:#ef4444;font-size:14px}
+        .grid-item.fib-236 { background:rgba(167,139,250,.10); border:1px solid rgba(167,139,250,.40); border-left:3px solid #a78bfa; }
+        .grid-item.fib-236 .item-label{color:#c4b5fd} .grid-item.fib-236 .item-value{color:#a78bfa}
+        .grid-item.fib-382 { background:rgba(139,92,246,.12);  border:1px solid rgba(139,92,246,.50);  border-left:3px solid #8b5cf6; }
+        .grid-item.fib-382 .item-label{color:#c4b5fd} .grid-item.fib-382 .item-value{color:#8b5cf6}
+        .grid-item.fib-500 { background:rgba(109,40,217,.16);  border:1px solid rgba(124,58,237,.55);  border-left:3px solid #7c3aed; }
+        .grid-item.fib-500 .item-label{color:#c4b5fd} .grid-item.fib-500 .item-value{color:#c084fc}
+        .grid-item.fib-618 { background:rgba(88,28,135,.22);   border:1px solid rgba(168,85,247,.65);  border-left:3px solid #a855f7; }
+        .grid-item.fib-618 .item-label{color:#e9d5ff} .grid-item.fib-618 .item-value{color:#e879f9;font-size:14px}
+        /* ── 已達標 ── */
+        .grid-item.hit { outline:2px solid #facc15; outline-offset:-1px; }
+        .hit-star {
+            display:block; font-size:14px; line-height:1; margin-bottom:2px;
+            color:#facc15; filter:drop-shadow(0 0 4px rgba(250,204,21,0.8));
+        }
+        /* ── Footer ── */
+        .footer-bar { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+        .note { font-size:11px; color:var(--text-muted); }
+        #proxyStatus { font-size:10px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+        @media (max-width:640px) {
+            .data-grid { grid-template-columns:repeat(3,1fr); }
+            .data-grid-fib { grid-template-columns:repeat(2,1fr); }
+            .calc-inputs { gap:10px; }
+            .input-group input { width:85px; font-size:13px; }
+            .current-price { font-size:22px; }
+            .card-top, .calc-inputs, .grid-section { padding:14px; }
+            .add-stock-row input { width:140px; }
         }
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <div class="header-section">
-            <h2>📈 股市看板 (閃電抓取版)</h2>
-            <button id="updateBtn" class="btn-update" onclick="fetchPrices()">一鍵同步最新報價</button>
+<div class="container">
+    <div class="header-section">
+        <div class="header-left">
+            <div class="header-icon">📈</div>
+            <div>
+                <h2>股市看板</h2>
+                <div class="header-sub">即時報價 · 回檔目標 · 斐波那契</div>
+            </div>
         </div>
-        
-        <div id="cards-container"></div>
-
-        <div class="note">
-            💡 提示：已升級多重備用代理伺服器，自動嘗試最佳連線路徑，大幅提升穩定性。
+        <div class="header-right">
+            <div class="add-stock-row">
+                <input id="newCode" placeholder="新增代碼 如 2330 / GC=F / ^TWII"
+                       onkeypress="if(event.key==='Enter') addNewStock()">
+                <button onclick="addNewStock()">+ 新增</button>
+            </div>
+            <div id="statusBar"><span class="dot"></span><span id="statusTxt">計算中…</span></div>
+            <button id="updateBtn" class="btn-update" onclick="manualRefresh()">⟳ &nbsp;同步最新報價</button>
         </div>
-        <div class="proxy-status" id="proxyStatus"></div>
     </div>
+    <div id="cards-container"></div>
+    <div class="footer-bar">
+        <div class="note">Yahoo Finance · 6 個備用 Proxy 輪換 · 開盤 09:00–13:50 每 30 秒自動更新</div>
+        <div id="proxyStatus"></div>
+    </div>
+</div>
 
-    <script>
-        const defaultStocks = [
-            { code: '台灣加權', yahoo: '^TWII', highest: 35414.54, low: '', current: 35414.54 },
-            { code: '00982A', yahoo: '00982A.TW', highest: 16.76, low: '', current: '' },
-            { code: '009805', yahoo: '009805.TW', highest: 15.19, low: '', current: '' },
-            { code: '00949', yahoo: '00949.TW', highest: 20.88, low: '', current: '' }
-        ];
+<script>
+// ═══════════════════════════════════════════
+// 股票清單
+// ═══════════════════════════════════════════
+const DEFAULT = [
+    { group:'📊 台灣股市', code:'台灣加權',     yahoo:'^TWII',     highest:35414.54, low:'26434.94', current:'', dp:2 },
+    { group:'📊 台灣股市', code:'00982A',       yahoo:'00982A.TW', highest:16.76,    low:'',         current:'', dp:2 },
+    { group:'📊 台灣股市', code:'009805',       yahoo:'009805.TW', highest:15.19,    low:'',         current:'', dp:2 },
+    { group:'📊 台灣股市', code:'00949',        yahoo:'00949.TW',  highest:20.88,    low:'',         current:'', dp:2 },
+    { group:'🛢 商品期貨', code:'黃金期貨 XAU', yahoo:'GC=F',      highest:0, low:'', current:'', dp:2 },
+    { group:'🛢 商品期貨', code:'原油期貨 WTI', yahoo:'CL=F',      highest:0, low:'', current:'', dp:2 },
+    { group:'💱 外匯',    code:'美元/日元',    yahoo:'JPY=X',     highest:0, low:'', current:'', dp:4 },
+    { group:'💱 外匯',    code:'日元/台幣',    yahoo:'JPYTWD=X',  highest:0, low:'', current:'', dp:4 },
+];
 
-        // 多重備用 Proxy 清單，按優先順序嘗試
-        const PROXY_LIST = [
-            {
-                name: 'corsproxy.io',
-                buildUrl: (apiUrl) => `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`
-            },
-            {
-                name: 'allorigins (get)',
-                buildUrl: (apiUrl) => `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`,
-                parseResponse: async (res) => {
-                    const wrapper = await res.json();
-                    return JSON.parse(wrapper.contents);
-                }
-            },
-            {
-                name: 'allorigins (raw)',
-                buildUrl: (apiUrl) => `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`
-            },
-            {
-                name: 'thingproxy',
-                buildUrl: (apiUrl) => `https://thingproxy.freeboard.io/fetch/${apiUrl}`
-            }
-        ];
-
-        let workingProxyIndex = 0; // 記住上次成功的 proxy
-
-        let stocks = [];
-        try {
-            stocks = JSON.parse(localStorage.getItem('stockTrackerDataV3')) || defaultStocks;
-        } catch(e) {
-            stocks = defaultStocks;
-        }
-        
-        stocks = stocks.map((s, i) => {
-            const def = defaultStocks[i] || {};
-            let y = s.yahoo || def.yahoo || '';
-            if (s.code === '00982A' && y === '00982A.TWO') y = '00982A.TW';
-            return { ...def, ...s, yahoo: y };
+let stocks = [];
+try {
+    const saved = JSON.parse(localStorage.getItem('stockDataV4') || '[]');
+    if (saved.length > 0 && saved[0].group) {
+        stocks = saved;
+    } else {
+        stocks = DEFAULT.map((def, i) => {
+            const sv = saved[i] || {};
+            return { ...def,
+                highest: sv.highest !== undefined ? sv.highest : def.highest,
+                low:     sv.low     !== undefined ? sv.low     : def.low,
+                current: sv.current !== undefined ? sv.current : def.current,
+            };
         });
+    }
+} catch(e) { stocks = DEFAULT.map(d => ({...d})); }
 
-        const container = document.getElementById('cards-container');
-        let chartInstances = {};
+// ═══════════════════════════════════════════
+// Proxy 清單（6個，依股票 index 輪換起點）
+// ═══════════════════════════════════════════
+const PROXIES = [
+    { fn: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,        wrap:false },
+    { fn: u => `https://corsproxy.io/?${encodeURIComponent(u)}`,                     wrap:false },
+    { fn: u => `https://corsproxy.org/?${encodeURIComponent(u)}`,                    wrap:false },
+    { fn: u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,        wrap:true  },
+    { fn: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,   wrap:false },
+    { fn: u => `https://thingproxy.freeboard.io/fetch/${u}`,                         wrap:false },
+];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-        function renderCards() {
-            container.innerHTML = '';
-            stocks.forEach((stock, index) => {
-                const cardHTML = `
-                <div class="card">
-                    <div class="card-top">
-                        <div class="stock-info">
-                            <span class="stock-name">${stock.code}</span>
-                            <span class="stock-symbol">
-                                Yahoo代號: <input type="text" id="yahoo-${index}" value="${stock.yahoo}" onchange="updateData(${index}, true)">
-                            </span>
-                        </div>
-                        <div class="price-info">
-                            <div class="current-price loading-text" id="display-price-${index}">讀取中...</div>
-                            <div class="price-change" id="display-change-${index}">-</div>
-                            <div class="vol-info">成交量: <span id="vol-${index}">-</span></div>
-                        </div>
-                    </div>
+// ═══════════════════════════════════════════
+// 開盤時間（台灣時間 09:00–13:50，週一~五）
+// ═══════════════════════════════════════════
+function twNow() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone:'Asia/Taipei' }));
+}
+function isTradingHours() {
+    const tw = twNow(), day = tw.getDay();
+    if (day === 0 || day === 6) return false;
+    const m = tw.getHours()*60 + tw.getMinutes();
+    return m >= 540 && m <= 830;
+}
+function statusLabel(sec) {
+    if (isTradingHours()) return `開盤中 · ${sec}s`;
+    const tw = twNow(), day = tw.getDay();
+    const m = tw.getHours()*60 + tw.getMinutes();
+    if (day === 0 || day === 6) return '休市（週末）';
+    if (m < 540) { const d=540-m; return `開盤還有 ${Math.floor(d/60)}h${d%60}m`; }
+    return '今日已收盤';
+}
+function refreshStatus() {
+    const bar = document.getElementById('statusBar');
+    const txt = document.getElementById('statusTxt');
+    if (!bar || !txt) return;
+    if (isTradingHours()) {
+        bar.className = countdown <= 5 ? 'soon' : 'trading';
+        txt.textContent = statusLabel(countdown);
+    } else {
+        bar.className = '';
+        txt.textContent = statusLabel(0);
+    }
+}
 
-                    <div class="chart-container"><canvas id="chart-${index}"></canvas></div>
+// ═══════════════════════════════════════════
+// 抓取單支股票
+// 關鍵修正：每支股票從不同 proxy 起點開始，
+// 避免多支同時打爆同一個 proxy
+// ═══════════════════════════════════════════
+// 對單一 sym 嘗試所有 proxy，回傳 {chartResult, quoteResult}
+async function tryFetch(sym, i) {
+    const urls = [
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`,
+        `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=5m&range=1d&includePrePost=false&_=${Date.now()}`,
+        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}&_=${Date.now()}`,
+        `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}&_=${Date.now()}`,
+    ];
+    let chartResult = null, quoteResult = null;
+    const start = i % PROXIES.length;
+    outer:
+    for (let ui = 0; ui < urls.length; ui++) {
+        const url = urls[ui];
+        for (let a = 0; a < PROXIES.length; a++) {
+            const idx = (start + a) % PROXIES.length;
+            const p   = PROXIES[idx];
+            try {
+                const ctrl = new AbortController();
+                const tid  = setTimeout(() => ctrl.abort(), 7000);
+                const res  = await fetch(p.fn(url), { signal:ctrl.signal, mode:'cors', cache:'no-store' });
+                clearTimeout(tid);
+                if (res.status === 429 || !res.ok) continue;
+                let json = await res.json();
+                if (p.wrap && json.contents) json = JSON.parse(json.contents);
+                if (url.includes('/v8/') && json?.chart?.result?.[0]) {
+                    chartResult = json.chart.result[0];
+                    document.getElementById('proxyStatus').textContent = `P${idx+1}✓`;
+                    break outer;
+                }
+                if (url.includes('/v7/') && json?.quoteResponse?.result?.[0]) {
+                    quoteResult = json.quoteResponse.result[0];
+                    document.getElementById('proxyStatus').textContent = `P${idx+1}✓`;
+                    break outer;
+                }
+            } catch(e) { continue; }
+        }
+    }
+    return { chartResult, quoteResult };
+}
 
-                    <div class="calc-inputs">
-                        <div class="input-group">
-                            <label>目前價格(可手填)</label>
-                            <input type="number" id="current-${index}" step="0.01" value="${stock.current}" oninput="updateData(${index})">
-                        </div>
-                        <div class="input-group">
-                            <label>波段高點</label>
-                            <input type="number" id="high-${index}" step="0.01" value="${stock.highest}" oninput="updateData(${index})">
-                        </div>
-                        <div class="input-group">
-                            <label>波段低點</label>
-                            <input type="number" id="low-${index}" step="0.01" value="${stock.low}" oninput="updateData(${index})" placeholder="選填">
-                        </div>
-                        <div class="result-group">
-                            <label>距高點差價 / 漲跌幅</label>
-                            <div class="result-val" id="diff-info-${index}">-</div>
-                        </div>
-                    </div>
+async function fetchOne(i) {
+    const pEl = document.getElementById(`price-${i}`);
+    let sym = stocks[i].yahoo;
+    if (!sym) { pEl.textContent='未填代號'; pEl.className='current-price error-text'; return; }
 
-                    <div class="grid-section">
-                        <div class="grid-title">回檔目標價</div>
-                        <div class="data-grid">
-                            <div class="grid-item"><div class="item-label">-5%</div><div class="item-value drop-val" id="drop-5-${index}">-</div></div>
-                            <div class="grid-item"><div class="item-label">-10%</div><div class="item-value drop-val" id="drop-10-${index}">-</div></div>
-                            <div class="grid-item"><div class="item-label">-15%</div><div class="item-value drop-val" id="drop-15-${index}">-</div></div>
-                            <div class="grid-item"><div class="item-label">-20%</div><div class="item-value drop-val" id="drop-20-${index}">-</div></div>
-                            <div class="grid-item"><div class="item-label">-25%</div><div class="item-value drop-val" id="drop-25-${index}">-</div></div>
-                            <div class="grid-item"><div class="item-label">-30%</div><div class="item-value drop-val" id="drop-30-${index}">-</div></div>
-                        </div>
-                    </div>
-                    <div class="grid-section" style="padding-top: 0;">
-                        <div class="grid-title">斐波那契支撐位</div>
-                        <div class="data-grid">
-                            <div class="grid-item"><div class="item-label">0.236</div><div class="item-value fib-val" id="fib-236-${index}">-</div></div>
-                            <div class="grid-item"><div class="item-label">0.382</div><div class="item-value fib-val" id="fib-382-${index}">-</div></div>
-                            <div class="grid-item"><div class="item-label">0.500</div><div class="item-value fib-val" id="fib-500-${index}">-</div></div>
-                            <div class="grid-item"><div class="item-label">0.618</div><div class="item-value fib-val" id="fib-618-${index}">-</div></div>
-                        </div>
-                    </div>
+    // 先試原始代號（預設 .TW）
+    let { chartResult, quoteResult } = await tryFetch(sym, i);
+
+    // 全失敗且代號是 .TW → 自動改 .TWO 重試
+    if (!chartResult && !quoteResult && sym.toUpperCase().endsWith('.TW')) {
+        const symTWO = sym.replace(/\.TW$/i, '.TWO');
+        const retry  = await tryFetch(symTWO, i);
+        if (retry.chartResult || retry.quoteResult) {
+            // 成功：記住正確後綴，之後不用再重試
+            stocks[i].yahoo = symTWO;
+            sym = symTWO;
+            try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
+            const tEl = document.getElementById(`time-${i}`);
+            if (tEl) { tEl.textContent = '🔄 自動修正為 .TWO'; tEl.className = 'data-time'; }
+            chartResult  = retry.chartResult;
+            quoteResult  = retry.quoteResult;
+        }
+    }
+
+    const fd = stocks[i].dp ?? 2;
+
+    // v7 quote 路徑（無走勢圖）
+    if (!chartResult && quoteResult) {
+        const q    = quoteResult;
+        const price = q.regularMarketPrice;
+        const prev  = q.regularMarketPreviousClose;
+        if (price) {
+            const diff = price - prev, pct = (diff/prev)*100, cc = diff>0?'up':diff<0?'down':'';
+            stocks[i].current = price;
+            document.getElementById(`inp-cur-${i}`).value = price;
+            pEl.className   = `current-price ${cc}`;
+            pEl.textContent = price.toFixed(fd);
+            const cEl = document.getElementById(`chg-${i}`);
+            cEl.textContent = `${diff>0?'▲':diff<0?'▼':''} ${Math.abs(diff).toFixed(fd)} (${pct>0?'+':''}${pct.toFixed(2)}%)`;
+            cEl.className   = `price-change ${cc}`;
+            pEl.closest('.card').classList.toggle('up-card', diff>0);
+            pEl.closest('.card').classList.toggle('down-card', diff<0);
+            if (q.regularMarketVolume) document.getElementById(`vol-${i}`).textContent = Number(q.regularMarketVolume).toLocaleString();
+            const tEl = document.getElementById(`time-${i}`);
+            if (tEl) { tEl.textContent='⚡ 即時報價'; tEl.className='data-time'; }
+            calculateAll(i);
+        }
+        return;
+    }
+
+    // 全失敗
+    if (!chartResult) {
+        const savedPrice = stocks[i].current;
+        if (savedPrice) {
+            pEl.textContent = parseFloat(savedPrice).toFixed(fd);
+            pEl.className   = 'current-price';
+            const tEl = document.getElementById(`time-${i}`);
+            if (tEl) { tEl.textContent='⚠️ 使用上次資料'; tEl.className='data-time stale'; }
+        } else {
+            pEl.textContent = '連線失敗'; pEl.className = 'current-price error-text';
+            const tEl = document.getElementById(`time-${i}`);
+            if (tEl) tEl.textContent = '所有 Proxy 失敗';
+        }
+        return;
+    }
+
+    // v8 chart 路徑
+    const meta  = chartResult.meta;
+    const price = meta.regularMarketPrice;
+    const prev  = meta.chartPreviousClose ?? meta.previousClose;
+    if (!price) return;
+
+    const diff = price - prev, pct = (diff/prev)*100, cc = diff>0?'up':diff<0?'down':'';
+    stocks[i].current = price;
+    document.getElementById(`inp-cur-${i}`).value = price;
+
+    pEl.className   = `current-price ${cc}`;
+    pEl.textContent = price.toFixed(fd);
+
+    const cEl   = document.getElementById(`chg-${i}`);
+    const arrow = diff>0?'▲':diff<0?'▼':'';
+    cEl.textContent = `${arrow} ${Math.abs(diff).toFixed(fd)} (${pct>0?'+':''}${pct.toFixed(2)}%)`;
+    cEl.className   = `price-change ${cc}`;
+
+    pEl.closest('.card').classList.toggle('up-card',   diff>0);
+    pEl.closest('.card').classList.toggle('down-card', diff<0);
+
+    const vEl = document.getElementById(`vol-${i}`);
+    if (vEl && meta.regularMarketVolume != null)
+        vEl.textContent = Number(meta.regularMarketVolume).toLocaleString();
+
+    if (meta.regularMarketTime) {
+        const dt   = new Date(meta.regularMarketTime * 1000);
+        const twDt = new Date(dt.toLocaleString('en-US',{timeZone:'Asia/Taipei'}));
+        const hhmm = `${String(twDt.getHours()).padStart(2,'0')}:${String(twDt.getMinutes()).padStart(2,'0')}`;
+        const ago  = Math.round((Date.now() - dt.getTime()) / 60000);
+        const tEl  = document.getElementById(`time-${i}`);
+        if (tEl) { tEl.textContent=`${hhmm}（${ago}分前）`; tEl.className=`data-time${ago>30?' stale':''}`; }
+    }
+
+    // 走勢圖
+    const allTs  = chartResult.timestamp || [];
+    const closes = chartResult.indicators?.quote?.[0]?.close || [];
+    const dTs=[], dPs=[];
+    if (allTs.length) {
+        const todayStr = new Date(allTs[allTs.length-1]*1000).toDateString();
+        for (let j=0; j<allTs.length; j++) {
+            if (closes[j]!=null && new Date(allTs[j]*1000).toDateString()===todayStr)
+                { dTs.push(allTs[j]); dPs.push(closes[j]); }
+        }
+        if (dPs.length > 1) drawChart(i, dTs, dPs, prev);
+    }
+
+    calculateAll(i);
+}
+
+// ═══════════════════════════════════════════
+// 主更新（序列執行，間隔 500ms）
+// ═══════════════════════════════════════════
+let isFetching = false;
+async function fetchAll() {
+    if (isFetching) return;
+    isFetching = true;
+    const btn = document.getElementById('updateBtn');
+    btn.disabled = true;
+
+    // 全部同時並行，各自用不同 proxy 起點
+    btn.textContent = '同步中…';
+    await Promise.all(stocks.map((_, i) => fetchOne(i)));
+
+    try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
+
+    btn.textContent = '✅ 同步完成';
+    refreshStatus();
+    setTimeout(() => { btn.disabled = false; btn.textContent = '⟳ \u00a0同步最新報價'; }, 2000);
+    isFetching = false;
+}
+
+function manualRefresh() { countdown = AUTO_SEC; fetchAll(); }
+
+// ═══════════════════════════════════════════
+// 倒數計時器（開盤才觸發自動更新）
+// ═══════════════════════════════════════════
+const AUTO_SEC = 30;
+let countdown = AUTO_SEC;
+setInterval(() => {
+    if (isTradingHours()) {
+        countdown--;
+        if (countdown <= 0) { countdown = AUTO_SEC; fetchAll(); }
+    } else {
+        countdown = AUTO_SEC;
+    }
+    refreshStatus();
+}, 1000);
+
+// ═══════════════════════════════════════════
+// 走勢圖（手機 DPR 修正）
+// ═══════════════════════════════════════════
+const chartInst = {};
+function drawChart(i, timestamps, prices, prevClose) {
+    const canvas = document.getElementById(`chart-${i}`);
+    if (!canvas) return;
+    const cont = canvas.parentElement;
+    const w = cont.clientWidth || 360, h = cont.clientHeight || 100;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = w * dpr; canvas.height = h * dpr;
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const last = prices[prices.length-1], isUp = last >= prevClose;
+    const mc   = isUp ? '#ff4d6d' : '#00d68f';
+    const grad = ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0, isUp ? 'rgba(255,77,109,0.25)' : 'rgba(0,214,143,0.25)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+    const labels = timestamps.map(t => {
+        const d = new Date(t*1000);
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    });
+
+    if (chartInst[i]) { chartInst[i].destroy(); chartInst[i] = null; }
+    chartInst[i] = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets:[{ data:prices, borderColor:mc, backgroundColor:grad,
+            borderWidth:2, pointRadius:0, pointHoverRadius:4, fill:true, tension:0.1 }] },
+        options: {
+            responsive:false, maintainAspectRatio:false, animation:{duration:0},
+            plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false} },
+            scales:{ x:{display:false}, y:{display:false,
+                min:Math.min(...prices)*0.999, max:Math.max(...prices)*1.001} },
+            layout:{padding:0}
+        }
+    });
+}
+
+// ═══════════════════════════════════════════
+// 計算回檔目標 / 斐波那契（含達標星星）
+// ═══════════════════════════════════════════
+function calculateAll(i) {
+    const high = parseFloat(stocks[i].highest) || 0;
+    const low  = parseFloat(stocks[i].low)     || 0;
+    const cur  = parseFloat(stocks[i].current);
+    const fd   = stocks[i].dp ?? 2;
+    const pEl  = document.getElementById(`price-${i}`);
+    const dEl  = document.getElementById(`diff-${i}`);
+
+    if (!pEl.classList.contains('error-text') && !pEl.classList.contains('loading-text'))
+        pEl.textContent = isNaN(cur) ? '—' : cur.toFixed(fd);
+
+    if (isNaN(cur) || high === 0) {
+        dEl.textContent = '—'; dEl.className = 'result-val';
+    } else {
+        const d = cur-high, p = (d/high)*100, s = d>0?'+':'';
+        dEl.innerHTML  = `${s}${d.toFixed(fd)}&nbsp;(${s}${p.toFixed(2)}%)`;
+        dEl.className  = `result-val ${d>0?'up':d<0?'down':''}`;
+    }
+
+    if (high > 0) {
+        [5,10,15,20,25,30].forEach(p => {
+            const target = high * (1 - p/100);
+            const el     = document.getElementById(`dp-${p}-${i}`);
+            const hit    = !isNaN(cur) && cur <= target;
+            el.innerHTML = (hit ? '<span class="hit-star">&#9733;</span>' : '') + target.toFixed(fd);
+            el.closest('.grid-item').classList.toggle('hit', hit);
+        });
+        const range = high - low;
+        [236,382,500,618].forEach(f =>
+            document.getElementById(`fib-${f}-${i}`).textContent = (high - range*(f/1000)).toFixed(fd));
+    }
+}
+
+function onInputChange(i) {
+    stocks[i].highest = document.getElementById(`inp-hi-${i}`).value;
+    stocks[i].low     = document.getElementById(`inp-lo-${i}`).value;
+    stocks[i].current = document.getElementById(`inp-cur-${i}`).value;
+    calculateAll(i);
+    try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
+}
+function onYahooChange(i) {
+    stocks[i].yahoo = document.getElementById(`inp-sym-${i}`).value.trim();
+    fetchOne(i);
+}
+
+// ═══════════════════════════════════════════
+// 刪除股票
+// ═══════════════════════════════════════════
+function deleteStock(i) {
+    if (!confirm(`確定刪除「${stocks[i].code}」？`)) return;
+    // 銷毀走勢圖 instance
+    if (chartInst[i]) { chartInst[i].destroy(); chartInst[i] = null; }
+    stocks.splice(i, 1);
+    try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
+    render();
+    // 重新 fetch 剩餘（保留已有價格，只 fetch 無資料的）
+}
+
+// ═══════════════════════════════════════════
+// 新增股票
+// ═══════════════════════════════════════════
+// 已知上櫃 ETF 代號集合
+const OTC_ETF = new Set([
+    '00940','00941','00942','00943','00944','00945','00946','00947','00948',
+    '00950','00951','00952','00953','00954','00955','00956','00957','00958',
+    '00959','00960','00961','00962','00963','00964','00965','00966','00967',
+    '00968','00969','00970','00971','00972','00973','00974','00975','00976',
+    '00977','00978','00979','00980','00981','00982','00983','00984','00985',
+    '009805','00949','006201','006205','006206','006207','006208',
+]);
+
+function guessYahooCode(raw) {
+    const v = raw.trim().toUpperCase();
+    if (v.includes('.') || v.includes('=') || v.startsWith('^')) return v;
+    const code = v.replace(/[^A-Z0-9]/g, '');
+    return code + '.TW';  // 預設 .TW，fetchOne 失敗時自動重試 .TWO
+}
+
+function addNewStock() {
+    const input = document.getElementById('newCode');
+    const raw   = input.value.trim();
+    if (!raw) return;
+
+    const yahooCode = guessYahooCode(raw);
+    const isForex   = yahooCode.includes('=X');
+    const isFutures = yahooCode.includes('=F');
+    const cleanCode = raw.toUpperCase()
+        .replace(/\.TWO$/i,'').replace(/\.TW$/i,'').replace(/=.*/,'');
+
+    const newStock = {
+        group:   '📊 自選',
+        code:    cleanCode,
+        yahoo:   yahooCode,
+        highest: 0, low: '', current: '',
+        dp: (isForex || isFutures) ? 4 : 2,
+    };
+
+    stocks.push(newStock);
+    try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
+    render();
+    fetchOne(stocks.length - 1);
+    input.value = '';
+}
+
+// ═══════════════════════════════════════════
+// 渲染卡片
+// ═══════════════════════════════════════════
+function render() {
+    const cont = document.getElementById('cards-container');
+    cont.innerHTML = '';
+    let lastGroup = '';
+    stocks.forEach((s, i) => {
+        if (s.group !== lastGroup) {
+            lastGroup = s.group;
+            cont.insertAdjacentHTML('beforeend', `<div class="group-header">${s.group}</div>`);
+        }
+        cont.insertAdjacentHTML('beforeend', `
+        <div class="card" id="card-${i}">
+            <button class="btn-delete" onclick="deleteStock(${i})" title="刪除">✕</button>
+            <div class="card-top">
+                <div class="stock-info">
+                    <span class="stock-name">${s.code}</span>
+                    <span class="stock-symbol">
+                        <span class="symbol-label">Yahoo</span>
+                        <input type="text" id="inp-sym-${i}" value="${s.yahoo}" onchange="onYahooChange(${i})">
+                    </span>
                 </div>
-                `;
-                container.insertAdjacentHTML('beforeend', cardHTML);
-                calculateAll(index);
-            });
+                <div class="price-info">
+                    <div class="current-price loading-text" id="price-${i}">讀取中…</div>
+                    <div class="price-change" id="chg-${i}"></div>
+                    <div class="vol-info">成交量 <span id="vol-${i}">—</span></div>
+                    <div class="data-time" id="time-${i}"></div>
+                </div>
+            </div>
+            <div class="chart-container"><canvas id="chart-${i}"></canvas></div>
+            <div class="calc-inputs">
+                <div class="input-group">
+                    <label>目前價格</label>
+                    <input type="number" id="inp-cur-${i}" step="0.0001" value="${s.current}" oninput="onInputChange(${i})">
+                </div>
+                <div class="input-group">
+                    <label>波段高點</label>
+                    <input type="number" id="inp-hi-${i}" step="0.0001" value="${s.highest}" oninput="onInputChange(${i})">
+                </div>
+                <div class="input-group">
+                    <label>波段低點</label>
+                    <input type="number" id="inp-lo-${i}" step="0.0001" value="${s.low}" oninput="onInputChange(${i})" placeholder="選填">
+                </div>
+                <div class="result-group">
+                    <label>距高點差 / 漲跌幅</label>
+                    <div class="result-val" id="diff-${i}">—</div>
+                </div>
+            </div>
+            <div class="grid-section">
+                <div class="grid-title">回檔目標價</div>
+                <div class="data-grid">
+                    <div class="grid-item drop-5" ><div class="item-label">−5%</div> <div class="item-value" id="dp-5-${i}">—</div></div>
+                    <div class="grid-item drop-10"><div class="item-label">−10%</div><div class="item-value" id="dp-10-${i}">—</div></div>
+                    <div class="grid-item drop-15"><div class="item-label">−15%</div><div class="item-value" id="dp-15-${i}">—</div></div>
+                    <div class="grid-item drop-20"><div class="item-label">−20%</div><div class="item-value" id="dp-20-${i}">—</div></div>
+                    <div class="grid-item drop-25"><div class="item-label">−25%</div><div class="item-value" id="dp-25-${i}">—</div></div>
+                    <div class="grid-item drop-30"><div class="item-label">−30%</div><div class="item-value" id="dp-30-${i}">—</div></div>
+                </div>
+            </div>
+            <div class="grid-section">
+                <div class="grid-title">斐波那契支撐位</div>
+                <div class="data-grid-fib">
+                    <div class="grid-item fib-236"><div class="item-label">0.236</div><div class="item-value" id="fib-236-${i}">—</div></div>
+                    <div class="grid-item fib-382"><div class="item-label">0.382</div><div class="item-value" id="fib-382-${i}">—</div></div>
+                    <div class="grid-item fib-500"><div class="item-label">0.500</div><div class="item-value" id="fib-500-${i}">—</div></div>
+                    <div class="grid-item fib-618"><div class="item-label">0.618</div><div class="item-value" id="fib-618-${i}">—</div></div>
+                </div>
+            </div>
+        </div>`);
+        calculateAll(i);
+    });
+}
 
-            setTimeout(fetchPrices, 100);
-        }
-
-        function updateData(index, refetch = false) {
-            stocks[index].yahoo = document.getElementById(`yahoo-${index}`).value.trim();
-            stocks[index].highest = document.getElementById(`high-${index}`).value;
-            stocks[index].low = document.getElementById(`low-${index}`).value;
-            stocks[index].current = document.getElementById(`current-${index}`).value;
-            localStorage.setItem('stockTrackerDataV3', JSON.stringify(stocks));
-            calculateAll(index);
-            if(refetch) fetchPrices();
-        }
-
-        function calculateAll(index) {
-            const high = parseFloat(stocks[index].highest) || 0;
-            const low = parseFloat(stocks[index].low) || 0;
-            const current = parseFloat(stocks[index].current);
-            
-            const diffCell = document.getElementById(`diff-info-${index}`);
-            const displayPrice = document.getElementById(`display-price-${index}`);
-            
-            if (!displayPrice.classList.contains('error-text')) {
-                 displayPrice.textContent = isNaN(current) ? '-' : current.toFixed(2);
-            }
-            
-            if (isNaN(current) || high === 0) {
-                diffCell.textContent = '-'; diffCell.className = 'result-val';
-            } else {
-                const diff = current - high;
-                const percent = (diff / high) * 100;
-                const sign = diff > 0 ? '+' : '';
-                diffCell.innerHTML = `${sign}${diff.toFixed(2)} &nbsp; (${sign}${percent.toFixed(2)}%)`;
-                diffCell.className = `result-val ${diff > 0 ? 'up' : (diff < 0 ? 'down' : '')}`;
-            }
-
-            if (high > 0) {
-                document.getElementById(`drop-5-${index}`).textContent = (high * 0.95).toFixed(2);
-                document.getElementById(`drop-10-${index}`).textContent = (high * 0.90).toFixed(2);
-                document.getElementById(`drop-15-${index}`).textContent = (high * 0.85).toFixed(2);
-                document.getElementById(`drop-20-${index}`).textContent = (high * 0.80).toFixed(2);
-                document.getElementById(`drop-25-${index}`).textContent = (high * 0.75).toFixed(2);
-                document.getElementById(`drop-30-${index}`).textContent = (high * 0.70).toFixed(2);
-
-                const range = high - low;
-                document.getElementById(`fib-236-${index}`).textContent = (high - range * 0.236).toFixed(2);
-                document.getElementById(`fib-382-${index}`).textContent = (high - range * 0.382).toFixed(2);
-                document.getElementById(`fib-500-${index}`).textContent = (high - range * 0.500).toFixed(2);
-                document.getElementById(`fib-618-${index}`).textContent = (high - range * 0.618).toFixed(2);
-            }
-        }
-
-        function drawChart(index, timestamps, prices, prevClose) {
-            const ctx = document.getElementById(`chart-${index}`).getContext('2d');
-            if (!timestamps || timestamps.length === 0) return;
-
-            const labels = timestamps.map(t => {
-                const d = new Date(t * 1000);
-                return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-            });
-
-            const currentPrice = prices[prices.length - 1];
-            const isUp = currentPrice >= prevClose;
-            const mainColor = isUp ? '#ff4a4a' : '#00e676';
-            
-            const gradient = ctx.createLinearGradient(0, 0, 0, 120);
-            gradient.addColorStop(0, isUp ? 'rgba(255, 74, 74, 0.2)' : 'rgba(0, 230, 118, 0.2)');
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-            if (chartInstances[index]) chartInstances[index].destroy();
-
-            chartInstances[index] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: prices, borderColor: mainColor, backgroundColor: gradient,
-                        borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, fill: true, tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-                    scales: {
-                        x: { display: false }, 
-                        y: { display: false, min: Math.min(...prices) * 0.999, max: Math.max(...prices) * 1.001 } 
-                    },
-                    layout: { padding: 0 }
-                }
-            });
-
-            const changeElement = document.getElementById(`display-change-${index}`);
-            const priceElement = document.getElementById(`display-price-${index}`);
-            priceElement.classList.remove('error-text');
-            priceElement.classList.remove('loading-text');
-
-            const diff = currentPrice - prevClose;
-            const percent = (diff / prevClose) * 100;
-            let arrow = diff > 0 ? '▲ ' : (diff < 0 ? '▼ ' : '');
-            
-            changeElement.textContent = `${arrow}${Math.abs(diff).toFixed(2)} (${percent > 0 ? '+' : ''}${percent.toFixed(2)}%)`;
-            changeElement.className = `price-change ${diff > 0 ? 'up' : (diff < 0 ? 'down' : '')}`;
-            priceElement.className = `current-price ${diff > 0 ? 'up' : (diff < 0 ? 'down' : '')}`;
-        }
-
-        // 核心：使用多重 Proxy 備援機制，自動重試下一個
-        async function fetchWithFallback(symbol) {
-            const apiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=5m&range=5d`;
-            
-            // 從上次成功的 proxy 開始嘗試
-            for (let attempt = 0; attempt < PROXY_LIST.length; attempt++) {
-                const idx = (workingProxyIndex + attempt) % PROXY_LIST.length;
-                const proxy = PROXY_LIST[idx];
-                
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 10000);
-                    
-                    const proxyUrl = proxy.buildUrl(apiUrl);
-                    const response = await fetch(proxyUrl, { signal: controller.signal });
-                    clearTimeout(timeoutId);
-                    
-                    if (!response.ok) continue;
-                    
-                    let data;
-                    if (proxy.parseResponse) {
-                        data = await proxy.parseResponse(response);
-                    } else {
-                        data = await response.json();
-                    }
-                    
-                    // 驗證資料格式正確
-                    if (!data?.chart?.result?.[0]) continue;
-                    
-                    // 成功！記住這個 proxy 以便下次優先使用
-                    workingProxyIndex = idx;
-                    document.getElementById('proxyStatus').textContent = `✅ 使用代理: ${proxy.name}`;
-                    return data;
-                    
-                } catch (err) {
-                    console.warn(`Proxy ${proxy.name} 失敗 (${symbol}):`, err.message);
-                    continue; // 嘗試下一個
-                }
-            }
-            
-            throw new Error('所有代理伺服器均無法連線');
-        }
-
-        async function fetchPrices() {
-            const btn = document.getElementById('updateBtn');
-            btn.disabled = true; btn.textContent = '同步中...';
-
-            const fetchPromises = stocks.map(async (stock, i) => {
-                const symbol = stock.yahoo;
-                const priceElement = document.getElementById(`display-price-${i}`);
-                
-                if (!symbol) {
-                    priceElement.textContent = "未填代號";
-                    priceElement.className = 'current-price error-text';
-                    return;
-                }
-
-                priceElement.textContent = "讀取中...";
-                priceElement.className = 'current-price loading-text';
-
-                try {
-                    const data = await fetchWithFallback(symbol);
-                    
-                    if (data.chart?.error) {
-                        priceElement.textContent = "代號錯誤";
-                        priceElement.className = 'current-price error-text';
-                        return;
-                    }
-
-                    const result = data.chart.result[0];
-                    const meta = result.meta;
-                    
-                    const price = meta.regularMarketPrice;
-                    if (price) {
-                        priceElement.classList.remove('error-text');
-                        priceElement.classList.remove('loading-text');
-                        stocks[i].current = price;
-                        document.getElementById(`current-${i}`).value = price;
-                        calculateAll(i);
-                    }
-
-                    const volume = meta.regularMarketVolume;
-                    if (volume !== undefined) {
-                        document.getElementById(`vol-${i}`).textContent = volume.toLocaleString();
-                    }
-
-                    const allTimestamps = result.timestamp || [];
-                    const quote = result.indicators?.quote?.[0] || {};
-                    const allPrices = quote.close || [];
-                    
-                    if (allTimestamps.length > 0 && allPrices.length > 0) {
-                        const lastTimestamp = allTimestamps[allTimestamps.length - 1] * 1000;
-                        const lastDateString = new Date(lastTimestamp).toDateString();
-                        
-                        const dailyTimestamps = [];
-                        const dailyPrices = [];
-                        
-                        for (let j = 0; j < allTimestamps.length; j++) {
-                            if (allPrices[j] !== null && new Date(allTimestamps[j] * 1000).toDateString() === lastDateString) {
-                                dailyTimestamps.push(allTimestamps[j]);
-                                dailyPrices.push(allPrices[j]);
-                            }
-                        }
-                        drawChart(i, dailyTimestamps, dailyPrices, meta.previousClose);
-                    }
-                    
-                } catch (error) { 
-                    console.error('所有 Proxy 抓取失敗:', symbol, error);
-                    priceElement.textContent = "連線失敗，請稍後再試";
-                    priceElement.className = 'current-price error-text';
-                }
-            });
-
-            await Promise.all(fetchPromises);
-
-            localStorage.setItem('stockTrackerDataV3', JSON.stringify(stocks));
-            btn.textContent = '✅ 同步完成';
-            setTimeout(() => { btn.disabled = false; btn.textContent = '一鍵同步最新報價'; }, 2000);
-        }
-
-        renderCards();
-    </script>
+// ── 啟動 ──
+render();
+refreshStatus();
+fetchAll();
+</script>
 </body>
 </html>
