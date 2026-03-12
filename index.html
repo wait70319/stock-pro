@@ -267,7 +267,7 @@
     </div>
     <div id="cards-container"></div>
     <div class="footer-bar">
-        <div class="note">Yahoo Finance · 4 個 Proxy 平行加速 · 開盤 09:00–13:50 每 30 秒自動更新</div>
+        <div class="note">Yahoo Finance · 6 個備用 Proxy 輪換 · 開盤 09:00–13:50 每 30 秒自動更新</div>
         <div id="proxyStatus"></div>
     </div>
 </div>
@@ -330,10 +330,12 @@ try {
 // CORS Proxy 清單（4個，平行賽跑）
 // ═══════════════════════════════════════════
 var PROXIES = [
-    { fn: function(u) { return 'https://api.allorigins.win/raw?url='       + encodeURIComponent(u); }, wrap: false },
-    { fn: function(u) { return 'https://corsproxy.io/?'                    + encodeURIComponent(u); }, wrap: false },
-    { fn: function(u) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); }, wrap: false },
-    { fn: function(u) { return 'https://api.allorigins.win/get?url='       + encodeURIComponent(u); }, wrap: true  },
+    { fn: function(u) { return 'https://api.allorigins.win/raw?url='           + encodeURIComponent(u); }, wrap: false },
+    { fn: function(u) { return 'https://corsproxy.io/?'                        + encodeURIComponent(u); }, wrap: false },
+    { fn: function(u) { return 'https://corsproxy.org/?'                       + encodeURIComponent(u); }, wrap: false },
+    { fn: function(u) { return 'https://thingproxy.freeboard.io/fetch/'        + u;                     }, wrap: false },
+    { fn: function(u) { return 'https://api.codetabs.com/v1/proxy/?quest='     + encodeURIComponent(u); }, wrap: false },
+    { fn: function(u) { return 'https://api.allorigins.win/get?url='           + encodeURIComponent(u); }, wrap: true  },
 ];
 
 // ═══════════════════════════════════════════
@@ -394,46 +396,44 @@ function proxyFetch(proxyFn, url, wrap, ms) {
 }
 
 // ═══════════════════════════════════════════
-// Yahoo Finance：平行賽跑（v7 quote）
+// Yahoo Finance：v8/chart 優先（一次同時拿到價格＋走勢圖）
+// v7/quote 作為備援（僅有價格，無走勢圖）
+// 6 個 proxy × 2 個 host = 12 個請求同時賽跑
 // ═══════════════════════════════════════════
-function yahooQuote(sym) {
-    var ts = Date.now();
-    var urls = [
-        'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + encodeURIComponent(sym) + '&_=' + ts,
-        'https://query2.finance.yahoo.com/v7/finance/quote?symbols=' + encodeURIComponent(sym) + '&_=' + ts,
-    ];
+function yahooFetch(sym) {
+    var ts  = Date.now();
     var tasks = [];
-    PROXIES.forEach(function(p) {
-        urls.forEach(function(url) {
-            tasks.push(proxyFetch(p.fn, url, p.wrap, 9000).then(function(json) {
-                var r = json && json.quoteResponse && json.quoteResponse.result && json.quoteResponse.result[0];
-                if (!r || r.regularMarketPrice == null) return Promise.reject(new Error('no data'));
-                return r;
-            }));
-        });
-    });
-    return promiseAny(tasks).catch(function() { return null; });
-}
 
-// ═══════════════════════════════════════════
-// Yahoo Finance：平行賽跑（v8 chart）
-// ═══════════════════════════════════════════
-function yahooChart(sym) {
-    var ts = Date.now();
-    var urls = [
+    // v8/chart（同時含 meta.regularMarketPrice 和走勢圖資料）
+    var chartUrls = [
         'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?interval=5m&range=1d&includePrePost=false&_=' + ts,
         'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?interval=5m&range=1d&includePrePost=false&_=' + ts,
     ];
-    var tasks = [];
     PROXIES.forEach(function(p) {
-        urls.forEach(function(url) {
-            tasks.push(proxyFetch(p.fn, url, p.wrap, 12000).then(function(json) {
+        chartUrls.forEach(function(url) {
+            tasks.push(proxyFetch(p.fn, url, p.wrap, 10000).then(function(json) {
                 var r = json && json.chart && json.chart.result && json.chart.result[0];
-                if (!r) return Promise.reject(new Error('no chart'));
-                return r;
+                if (!r || r.meta == null || r.meta.regularMarketPrice == null) return Promise.reject(new Error('no chart'));
+                return { type: 'chart', data: r };
             }));
         });
     });
+
+    // v7/quote 備援（若 chart 全部失敗還能拿到價格）
+    var quoteUrls = [
+        'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + encodeURIComponent(sym) + '&_=' + ts,
+        'https://query2.finance.yahoo.com/v7/finance/quote?symbols=' + encodeURIComponent(sym) + '&_=' + ts,
+    ];
+    PROXIES.forEach(function(p) {
+        quoteUrls.forEach(function(url) {
+            tasks.push(proxyFetch(p.fn, url, p.wrap, 10000).then(function(json) {
+                var r = json && json.quoteResponse && json.quoteResponse.result && json.quoteResponse.result[0];
+                if (!r || r.regularMarketPrice == null) return Promise.reject(new Error('no quote'));
+                return { type: 'quote', data: r };
+            }));
+        });
+    });
+
     return promiseAny(tasks).catch(function() { return null; });
 }
 
@@ -446,6 +446,7 @@ function drawChart(i, timestamps, prices, prevClose) {
     var canvas = document.getElementById('chart-' + i);
     if (!canvas) return;
     var cont = canvas.parentElement;
+    if (!cont) return;
     var w = cont.clientWidth || 360, h = cont.clientHeight || 100;
     var dpr = window.devicePixelRatio || 1;
     canvas.width  = w * dpr; canvas.height = h * dpr;
@@ -517,17 +518,14 @@ async function fetchOne(i) {
     if (!pEl) return;
     var fd = stock.dp !== undefined ? stock.dp : 2;
 
-    // 同時發出 quote + chart（不互相等待）
-    var quoteP = yahooQuote(sym);
-    var chartP = yahooChart(sym);
-    var q = await quoteP;
+    // 一次發出 v8+v7 × 6 proxy 共 24 個請求同時賽跑
+    var result = await yahooFetch(sym);
 
     // 全失敗且代號是 .TW → 自動重試 .TWO
-    if (!q && /\.TW$/i.test(sym)) {
+    if (!result && /\.TW$/i.test(sym)) {
         var symTWO = sym.replace(/\.TW$/i, '.TWO');
-        q = await yahooQuote(symTWO);
-        if (q) {
-            chartP = yahooChart(symTWO);
+        result = await yahooFetch(symTWO);
+        if (result) {
             stocks[i].yahoo = symTWO;
             var symEl = document.getElementById('inp-sym-' + i);
             if (symEl) symEl.value = symTWO;
@@ -538,7 +536,7 @@ async function fetchOne(i) {
     }
 
     // 仍然失敗 → 使用快取
-    if (!q) {
+    if (!result) {
         var cached = parseFloat(stock.current);
         pEl.textContent = isNaN(cached) ? '連線失敗' : cached.toFixed(fd);
         pEl.className   = isNaN(cached) ? 'current-price error-text' : 'current-price';
@@ -547,16 +545,28 @@ async function fetchOne(i) {
             tElF.textContent = isNaN(cached) ? '所有來源失敗' : '⚠️ 使用上次資料';
             tElF.className   = 'data-time stale';
         }
-        chartP.then(function(c) { if (c && !isNaN(cached)) applyChart(i, c, cached); });
         return;
     }
 
-    // ── 更新價格 UI ──
-    var price     = q.regularMarketPrice;
-    var prevClose = q.regularMarketPreviousClose || price;
-    var volume    = q.regularMarketVolume;
-    var mTime     = q.regularMarketTime;
+    // ── 解析結果 ──
+    var price, prevClose, volume, mTime, chartData = null;
 
+    if (result.type === 'chart') {
+        var meta  = result.data.meta;
+        price     = meta.regularMarketPrice;
+        prevClose = meta.chartPreviousClose || meta.previousClose || price;
+        volume    = meta.regularMarketVolume;
+        mTime     = meta.regularMarketTime;
+        chartData = result.data;
+    } else {
+        var q     = result.data;
+        price     = q.regularMarketPrice;
+        prevClose = q.regularMarketPreviousClose || price;
+        volume    = q.regularMarketVolume;
+        mTime     = q.regularMarketTime;
+    }
+
+    // ── 更新價格 UI ──
     var diff = price - prevClose;
     var pct  = prevClose ? (diff / prevClose) * 100 : 0;
     var cc   = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
@@ -590,17 +600,17 @@ async function fetchOne(i) {
         var twDt = new Date(dt.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
         var hhmm = ('0' + twDt.getHours()).slice(-2) + ':' + ('0' + twDt.getMinutes()).slice(-2);
         var ago  = Math.round((Date.now() - dt.getTime()) / 60000);
-        tEl.textContent = hhmm + '（' + ago + '分前）';
+        tEl.textContent = hhmm + '（' + ago + '分前）' + (result.type === 'quote' ? ' ⚡' : '');
         tEl.className   = 'data-time' + (ago > 30 ? ' stale' : '');
     }
 
     var psEl = document.getElementById('proxyStatus');
-    if (psEl) psEl.textContent = 'YF✓';
+    if (psEl) psEl.textContent = result.type === 'chart' ? 'v8✓' : 'v7✓';
 
     calculateAll(i);
 
-    // 走勢圖（背景完成後繪製，不阻塞價格）
-    chartP.then(function(c) { applyChart(i, c, prevClose); });
+    // 走勢圖（v8 chart 直接畫；v7 quote 則不畫）
+    if (chartData) applyChart(i, chartData, prevClose);
 }
 
 // ═══════════════════════════════════════════
