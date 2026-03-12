@@ -267,13 +267,20 @@
     </div>
     <div id="cards-container"></div>
     <div class="footer-bar">
-        <div class="note">Yahoo Finance · 6 個備用 Proxy 輪換 · 開盤 09:00–13:50 每 30 秒自動更新</div>
+        <div class="note">Yahoo Finance · Cloudflare Worker + 備用 Proxy · 開盤 09:00–13:50 每 30 秒自動更新</div>
         <div id="proxyStatus"></div>
     </div>
 </div>
 
 
 <script>
+// ═══════════════════════════════════════════
+// ⚙️  設定你的 Cloudflare Worker URL
+// 部署 worker.js 後，把 URL 貼在這裡
+// 例如：'https://yahoo-proxy.your-name.workers.dev'
+// 留空 '' 則略過 Worker，直接用備用 Proxy
+// ═══════════════════════════════════════════
+var WORKER_URL = 'https://yahoo-proxy.wait70319.workers.dev';
 
 // ═══════════════════════════════════════════
 // Promise.any 相容性 Polyfill（支援所有瀏覽器）
@@ -327,16 +334,28 @@ try {
 } catch(e) { stocks = DEFAULT.map(function(d) { return Object.assign({}, d); }); }
 
 // ═══════════════════════════════════════════
-// CORS Proxy 清單（4個，平行賽跑）
+// Proxy 建構器
+// Worker 優先；Worker 未設定時用備用 proxy
 // ═══════════════════════════════════════════
-var PROXIES = [
-    { fn: function(u) { return 'https://api.allorigins.win/raw?url='           + encodeURIComponent(u); }, wrap: false },
-    { fn: function(u) { return 'https://corsproxy.io/?'                        + encodeURIComponent(u); }, wrap: false },
-    { fn: function(u) { return 'https://corsproxy.org/?'                       + encodeURIComponent(u); }, wrap: false },
-    { fn: function(u) { return 'https://thingproxy.freeboard.io/fetch/'        + u;                     }, wrap: false },
-    { fn: function(u) { return 'https://api.codetabs.com/v1/proxy/?quest='     + encodeURIComponent(u); }, wrap: false },
-    { fn: function(u) { return 'https://api.allorigins.win/get?url='           + encodeURIComponent(u); }, wrap: true  },
-];
+function buildProxies() {
+    var list = [];
+
+    // 1. Cloudflare Worker（設定後最可靠）
+    if (WORKER_URL) {
+        var w = WORKER_URL.replace(/\/$/, '');
+        list.push({ fn: function(u) { return w + '/?url=' + encodeURIComponent(u); }, wrap: false, name: 'CF-Worker' });
+    }
+
+    // 2. 備用免費 Proxy（不需設定，但可能受限）
+    list.push({ fn: function(u) { return 'https://api.allorigins.win/raw?url='           + encodeURIComponent(u); }, wrap: false, name: 'allorigins-raw' });
+    list.push({ fn: function(u) { return 'https://corsproxy.io/?'                        + encodeURIComponent(u); }, wrap: false, name: 'corsproxy.io'   });
+    list.push({ fn: function(u) { return 'https://corsproxy.org/?'                       + encodeURIComponent(u); }, wrap: false, name: 'corsproxy.org'  });
+    list.push({ fn: function(u) { return 'https://api.allorigins.win/get?url='           + encodeURIComponent(u); }, wrap: true,  name: 'allorigins-get' });
+    list.push({ fn: function(u) { return 'https://api.codetabs.com/v1/proxy/?quest='     + encodeURIComponent(u); }, wrap: false, name: 'codetabs'       });
+    list.push({ fn: function(u) { return 'https://thingproxy.freeboard.io/fetch/'        + encodeURIComponent(u); }, wrap: false, name: 'thingproxy'     });
+    return list;
+}
+var PROXIES = buildProxies();
 
 // ═══════════════════════════════════════════
 // 開盤時間（台灣時間 09:00–13:50，週一~五）
@@ -372,21 +391,22 @@ function refreshStatus() {
 }
 
 // ═══════════════════════════════════════════
-// 單一 proxy+url 請求（帶 timeout）
+// 單一 proxy 請求
 // ═══════════════════════════════════════════
-function proxyFetch(proxyFn, url, wrap, ms) {
+function proxyFetch(proxy, url, ms) {
     return new Promise(function(resolve, reject) {
         var ctrl = new AbortController();
         var tid  = setTimeout(function() { ctrl.abort(); reject(new Error('timeout')); }, ms);
-        fetch(proxyFn(url), { signal: ctrl.signal, mode: 'cors', cache: 'no-store' })
+        fetch(proxy.fn(url), { signal: ctrl.signal, mode: 'cors', cache: 'no-store' })
             .then(function(res) {
                 clearTimeout(tid);
+                if (res.status === 429) { reject(new Error('rate-limited')); return; }
                 if (!res.ok) { reject(new Error('HTTP ' + res.status)); return; }
                 return res.json();
             })
             .then(function(json) {
-                if (!json) { reject(new Error('no json')); return; }
-                if (wrap && json.contents) {
+                if (!json) { reject(new Error('empty')); return; }
+                if (proxy.wrap && json.contents) {
                     try { json = JSON.parse(json.contents); } catch(e) { reject(e); return; }
                 }
                 resolve(json);
@@ -396,45 +416,52 @@ function proxyFetch(proxyFn, url, wrap, ms) {
 }
 
 // ═══════════════════════════════════════════
-// Yahoo Finance：v8/chart 優先（一次同時拿到價格＋走勢圖）
-// v7/quote 作為備援（僅有價格，無走勢圖）
-// 6 個 proxy × 2 個 host = 12 個請求同時賽跑
+// Yahoo Finance fetch：Worker 優先，備用 proxy 依序
+// v8/chart 優先（含走勢圖）→ v7/quote 備援
 // ═══════════════════════════════════════════
-function yahooFetch(sym) {
-    var ts  = Date.now();
-    var tasks = [];
-
-    // v8/chart（同時含 meta.regularMarketPrice 和走勢圖資料）
-    var chartUrls = [
+async function yahooFetch(sym, stockIdx) {
+    var ts     = Date.now();
+    var start  = stockIdx % PROXIES.length;
+    var v8urls = [
         'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?interval=5m&range=1d&includePrePost=false&_=' + ts,
         'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?interval=5m&range=1d&includePrePost=false&_=' + ts,
     ];
-    PROXIES.forEach(function(p) {
-        chartUrls.forEach(function(url) {
-            tasks.push(proxyFetch(p.fn, url, p.wrap, 10000).then(function(json) {
-                var r = json && json.chart && json.chart.result && json.chart.result[0];
-                if (!r || r.meta == null || r.meta.regularMarketPrice == null) return Promise.reject(new Error('no chart'));
-                return { type: 'chart', data: r };
-            }));
-        });
-    });
-
-    // v7/quote 備援（若 chart 全部失敗還能拿到價格）
-    var quoteUrls = [
+    var v7urls = [
         'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + encodeURIComponent(sym) + '&_=' + ts,
         'https://query2.finance.yahoo.com/v7/finance/quote?symbols=' + encodeURIComponent(sym) + '&_=' + ts,
     ];
-    PROXIES.forEach(function(p) {
-        quoteUrls.forEach(function(url) {
-            tasks.push(proxyFetch(p.fn, url, p.wrap, 10000).then(function(json) {
-                var r = json && json.quoteResponse && json.quoteResponse.result && json.quoteResponse.result[0];
-                if (!r || r.regularMarketPrice == null) return Promise.reject(new Error('no quote'));
-                return { type: 'quote', data: r };
-            }));
-        });
-    });
 
-    return promiseAny(tasks).catch(function() { return null; });
+    // 每個 proxy 嘗試 v8 再 v7（依輪換起點，避免全部打同一個 proxy）
+    for (var a = 0; a < PROXIES.length; a++) {
+        var proxy = PROXIES[(start + a) % PROXIES.length];
+
+        // v8/chart
+        for (var ui = 0; ui < v8urls.length; ui++) {
+            try {
+                var json = await proxyFetch(proxy, v8urls[ui], 10000);
+                var r    = json && json.chart && json.chart.result && json.chart.result[0];
+                if (r && r.meta && r.meta.regularMarketPrice != null) {
+                    var psEl = document.getElementById('proxyStatus');
+                    if (psEl) psEl.textContent = proxy.name + '·v8✓';
+                    return { type: 'chart', data: r };
+                }
+            } catch(e) { /* try next */ }
+        }
+
+        // v7/quote
+        for (var qi = 0; qi < v7urls.length; qi++) {
+            try {
+                var json2 = await proxyFetch(proxy, v7urls[qi], 10000);
+                var r2    = json2 && json2.quoteResponse && json2.quoteResponse.result && json2.quoteResponse.result[0];
+                if (r2 && r2.regularMarketPrice != null) {
+                    var psEl2 = document.getElementById('proxyStatus');
+                    if (psEl2) psEl2.textContent = proxy.name + '·v7✓';
+                    return { type: 'quote', data: r2 };
+                }
+            } catch(e) { /* try next */ }
+        }
+    }
+    return null;
 }
 
 // ═══════════════════════════════════════════
@@ -493,7 +520,7 @@ function applyChart(i, chartData, prevClose) {
     var allTs  = chartData.timestamp || [];
     var closes = (chartData.indicators && chartData.indicators.quote && chartData.indicators.quote[0])
                  ? (chartData.indicators.quote[0].close || []) : [];
-    var pc = prevClose || (chartData.meta && (chartData.meta.chartPreviousClose || chartData.meta.previousClose)) || 0;
+    var pc     = prevClose || (chartData.meta && (chartData.meta.chartPreviousClose || chartData.meta.previousClose)) || 0;
     if (!allTs.length || !closes.length) return;
     var todayStr = new Date(allTs[allTs.length - 1] * 1000).toDateString();
     var dTs = [], dPs = [];
@@ -518,13 +545,12 @@ async function fetchOne(i) {
     if (!pEl) return;
     var fd = stock.dp !== undefined ? stock.dp : 2;
 
-    // 一次發出 v8+v7 × 6 proxy 共 24 個請求同時賽跑
-    var result = await yahooFetch(sym);
+    var result = await yahooFetch(sym, i);
 
     // 全失敗且代號是 .TW → 自動重試 .TWO
     if (!result && /\.TW$/i.test(sym)) {
         var symTWO = sym.replace(/\.TW$/i, '.TWO');
-        result = await yahooFetch(symTWO);
+        result = await yahooFetch(symTWO, i);
         if (result) {
             stocks[i].yahoo = symTWO;
             var symEl = document.getElementById('inp-sym-' + i);
@@ -535,7 +561,7 @@ async function fetchOne(i) {
         }
     }
 
-    // 仍然失敗 → 使用快取
+    // 仍然失敗 → 快取
     if (!result) {
         var cached = parseFloat(stock.current);
         pEl.textContent = isNaN(cached) ? '連線失敗' : cached.toFixed(fd);
@@ -548,9 +574,8 @@ async function fetchOne(i) {
         return;
     }
 
-    // ── 解析結果 ──
+    // 解析結果
     var price, prevClose, volume, mTime, chartData = null;
-
     if (result.type === 'chart') {
         var meta  = result.data.meta;
         price     = meta.regularMarketPrice;
@@ -566,7 +591,7 @@ async function fetchOne(i) {
         mTime     = q.regularMarketTime;
     }
 
-    // ── 更新價格 UI ──
+    // 更新 UI
     var diff = price - prevClose;
     var pct  = prevClose ? (diff / prevClose) * 100 : 0;
     var cc   = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
@@ -600,16 +625,11 @@ async function fetchOne(i) {
         var twDt = new Date(dt.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
         var hhmm = ('0' + twDt.getHours()).slice(-2) + ':' + ('0' + twDt.getMinutes()).slice(-2);
         var ago  = Math.round((Date.now() - dt.getTime()) / 60000);
-        tEl.textContent = hhmm + '（' + ago + '分前）' + (result.type === 'quote' ? ' ⚡' : '');
+        tEl.textContent = hhmm + '（' + ago + '分前）';
         tEl.className   = 'data-time' + (ago > 30 ? ' stale' : '');
     }
 
-    var psEl = document.getElementById('proxyStatus');
-    if (psEl) psEl.textContent = result.type === 'chart' ? 'v8✓' : 'v7✓';
-
     calculateAll(i);
-
-    // 走勢圖（v8 chart 直接畫；v7 quote 則不畫）
     if (chartData) applyChart(i, chartData, prevClose);
 }
 
@@ -690,11 +710,7 @@ function addNewStock() {
     var isForex   = yahooCode.indexOf('=X') >= 0;
     var isFutures = yahooCode.indexOf('=F') >= 0;
     var cleanCode = raw.toUpperCase().replace(/\.TWO$/i,'').replace(/\.TW$/i,'').replace(/=.*/g,'');
-    stocks.push({
-        group:'📊 自選', code:cleanCode, yahoo:yahooCode,
-        highest:0, low:'', current:'',
-        dp: (isForex || isFutures) ? 4 : 2
-    });
+    stocks.push({ group:'📊 自選', code:cleanCode, yahoo:yahooCode, highest:0, low:'', current:'', dp:(isForex||isFutures)?4:2 });
     try { localStorage.setItem('stockDataV4', JSON.stringify(stocks)); } catch(e) {}
     render();
     fetchOne(stocks.length - 1);
@@ -786,9 +802,6 @@ async function fetchAll() {
 
 function manualRefresh() { countdown = AUTO_SEC; fetchAll(); }
 
-// ═══════════════════════════════════════════
-// 倒數計時器
-// ═══════════════════════════════════════════
 var AUTO_SEC  = 30;
 var countdown = AUTO_SEC;
 
